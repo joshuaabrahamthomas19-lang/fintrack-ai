@@ -1,0 +1,5 @@
+{
+  "name": "FinTrack AI",
+  "description": "An intelligent financial tracker that analyzes your SMS transaction history to provide budgeting, goal setting, and savings insights. Upload your exported SMS file and let Gemini AI organize your finances.",
+  "requestFramePermissions": []
+}
