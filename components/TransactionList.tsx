@@ -1,27 +1,17 @@
 import React from 'react';
-import type { Transaction, UserData } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Transaction, UserData } from '@/types';
 import { CreditIcon, DebitIcon, EditIcon, DeleteIcon, DownloadIcon } from './icons';
 import { generateTransactionsPdf } from '../services/pdfService';
 
 interface TransactionListProps {
     transactions: Transaction[];
     userData: UserData;
-    updateUserData: (updates: Partial<UserData>) => void;
     onEditTransaction: (transaction: Transaction) => void;
+    onDeleteTransaction: (transaction: Transaction) => void;
 }
 
-const TransactionList: React.FC<TransactionListProps> = ({ transactions, userData, updateUserData, onEditTransaction }) => {
-
-    const handleDelete = (id: string) => {
-        const txToDelete = userData.transactions.find(t => t.id === id);
-        if (!txToDelete) return;
-
-        const balanceChange = txToDelete.type === 'credit' ? -txToDelete.amount : txToDelete.amount;
-        updateUserData({
-            transactions: userData.transactions.filter(t => t.id !== id),
-            totalBalance: userData.totalBalance + balanceChange,
-        });
-    };
+const TransactionList: React.FC<TransactionListProps> = ({ transactions, userData, onEditTransaction, onDeleteTransaction }) => {
 
     const handleDownload = () => {
         generateTransactionsPdf(transactions, userData.currency);
@@ -71,7 +61,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, userDat
                                     </div>
                                     <div className="flex items-center space-x-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => onEditTransaction(tx)} className="p-2 text-text-muted hover:text-secondary rounded-full"><EditIcon /></button>
-                                        <button onClick={() => handleDelete(tx.id)} className="p-2 text-text-muted hover:text-danger rounded-full"><DeleteIcon /></button>
+                                        <button onClick={() => onDeleteTransaction(tx)} className="p-2 text-text-muted hover:text-danger rounded-full"><DeleteIcon /></button>
                                     </div>
                                 </div>
                             </li>

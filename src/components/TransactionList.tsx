@@ -1,7 +1,8 @@
 import React from 'react';
-import type { Transaction, UserData } from '../types';
-import { CreditIcon, DebitIcon, EditIcon, DeleteIcon, DownloadIcon } from './icons';
-import { generateTransactionsPdf } from '../services/pdfService';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Transaction, UserData } from '@/types';
+import { CreditIcon, DebitIcon, EditIcon, DeleteIcon, DownloadIcon } from '@/components/icons';
+import { generateTransactionsPdf } from '@/services/pdfService';
 
 interface TransactionListProps {
     transactions: Transaction[];

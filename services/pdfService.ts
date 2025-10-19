@@ -2,7 +2,8 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import type { Transaction } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Transaction } from '@/types';
 
 export const generateTransactionsPdf = (transactions: Transaction[], currency: string): void => {
     const doc = new jsPDF();

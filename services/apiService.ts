@@ -1,4 +1,5 @@
-import type { Transaction, UserData } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Transaction, UserData } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 

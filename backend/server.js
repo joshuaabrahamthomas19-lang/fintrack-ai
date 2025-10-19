@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 // FIX: Removed unused HarmCategory and HarmBlockThreshold imports.
-import { GoogleGenAI } from '@google/genai';
+// FIX: Import `Type` for response schema definition.
+import { GoogleGenAI, Type } from '@google/genai';
 import 'dotenv/config';
 import helmet from 'helmet';
 
@@ -110,15 +111,19 @@ app.post('/api/parse-sms', authenticateToken, upload.single('file'), async (req,
         const fileContent = req.file.buffer.toString('utf8');
         const model = 'gemini-2.5-flash';
 
+        // FIX: Updated prompt to be cleaner and more direct for schema-based response.
         const prompt = `
             Parse the following SMS messages to extract financial transactions.
-            For each transaction, determine if it's a debit or credit, the amount, the merchant/source, a brief description, the date (in YYYY-MM-DD format), and a relevant category.
-            Valid categories are: Food, Transport, Shopping, Utilities, Entertainment, Health, Salary, Rent, Groceries, Bills, Travel, Gifts, Other.
-            If the date is not specified, use today's date: ${new Date().toISOString().split('T')[0]}.
-            Return the result as a JSON object with a single key "transactions" which is an array of transaction objects.
-            Each transaction object should have: type, amount, merchant, description, date, category.
-            Do not include any transactions that are not financial (e.g., OTPs, alerts, marketing messages).
-            If no financial transactions are found, return an empty "transactions" array.
+            For each transaction, identify the following details:
+            - type: Is it a 'debit' or 'credit'?
+            - amount: The numerical value of the transaction.
+            - merchant: The name of the merchant or source.
+            - description: A brief summary of the transaction.
+            - date: The date in YYYY-MM-DD format. If not specified, use today's date: ${new Date().toISOString().split('T')[0]}.
+            - category: Assign a relevant category from this list: Food, Transport, Shopping, Utilities, Entertainment, Health, Salary, Rent, Groceries, Bills, Travel, Gifts, Other.
+
+            Analyze only financial transactions. Ignore non-financial messages like OTPs, alerts, or marketing.
+            If no financial transactions are found, return an empty list of transactions.
 
             SMS Data:
             ---
@@ -126,11 +131,34 @@ app.post('/api/parse-sms', authenticateToken, upload.single('file'), async (req,
             ---
         `;
 
+        // FIX: Implemented responseSchema for more reliable and structured JSON output.
         const response = await genAI.models.generateContent({
             model: model,
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        transactions: {
+                            type: Type.ARRAY,
+                            description: 'An array of financial transactions extracted from the SMS data.',
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING, description: "Transaction type, either 'debit' or 'credit'." },
+                                    amount: { type: Type.NUMBER, description: "The transaction amount as a number." },
+                                    merchant: { type: Type.STRING, description: "The merchant or source of the transaction." },
+                                    description: { type: Type.STRING, description: "A brief description of the transaction." },
+                                    date: { type: Type.STRING, description: "The date of the transaction in YYYY-MM-DD format." },
+                                    category: { type: Type.STRING, description: "The category of the transaction from the provided list." },
+                                },
+                                required: ['type', 'amount', 'merchant', 'description', 'date', 'category']
+                            }
+                        }
+                    },
+                    required: ['transactions']
+                }
             }
         });
 

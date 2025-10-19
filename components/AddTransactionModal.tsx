@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
-import type { Transaction, UserData } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Transaction, UserData } from '@/types';
 import { CalendarIcon } from './icons';
 
 interface AddTransactionModalProps {

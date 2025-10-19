@@ -1,7 +1,7 @@
 import React from 'react';
-import Modal from './Modal';
-import type { Transaction } from '../types';
-import { WarningIcon } from './icons';
+import Modal from '@/components/Modal';
+import type { Transaction } from '@/types';
+import { WarningIcon } from '@/components/icons';
 
 interface ConfirmDeleteModalProps {
     transaction: Transaction;

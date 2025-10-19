@@ -1,6 +1,6 @@
 import React from 'react';
-import type { View } from '../types';
-import { DashboardIcon, ReportsIcon, TransactionsIcon } from './icons';
+import type { View } from '@/types';
+import { DashboardIcon, ReportsIcon, TransactionsIcon } from '@/components/icons';
 
 interface BottomNavProps {
     currentView: View;

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import type { Transaction } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Transaction } from '@/types';
 import BarChart from './charts/BarChart';
 import DoughnutChart from './charts/DoughnutChart';
 import { generateReportPdf } from '../services/pdfService';
@@ -21,12 +22,14 @@ const Reports: React.FC<ReportsProps> = ({ transactions, currency }) => {
     const reportId = "financial-report-container";
 
     const { totalIncome, totalExpenses, spendingByCategory, monthlyData } = useMemo(() => {
-        const income = transactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + Number(t.amount), 0);
-        const expenses = transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + Number(t.amount), 0);
+        // FIX: Removed redundant Number() conversion as `t.amount` is already a number.
+        const income = transactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0);
+        const expenses = transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0);
 
         const categoryMap = transactions.filter(t => t.type === 'debit').reduce((acc, t) => {
             const key = t.category || 'Uncategorized';
-            acc[key] = (acc[key] || 0) + Number(t.amount);
+            // FIX: Removed redundant Number() conversion.
+            acc[key] = (acc[key] || 0) + t.amount;
             return acc;
         }, {} as Record<string, number>);
         
@@ -39,7 +42,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, currency }) => {
             const date = new Date(t.date);
             if (!isNaN(date.getTime())) {
                 const month = date.getMonth();
-                t.type === 'credit' ? monthlySummary.income[month] += Number(t.amount) : monthlySummary.expenses[month] += Number(t.amount);
+                // FIX: Removed redundant Number() conversion.
+                t.type === 'credit' ? monthlySummary.income[month] += t.amount : monthlySummary.expenses[month] += t.amount;
             }
         });
 

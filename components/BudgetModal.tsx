@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
-import type { Budget } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { Budget } from '@/types';
 
 interface BudgetModalProps {
     currentBudget: Budget;

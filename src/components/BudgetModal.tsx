@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
-import type { Budget } from '../types';
+import Modal, { ModalButton, ModalInput, ModalLabel } from '@/components/Modal';
+import type { Budget } from '@/types';
 
 interface BudgetModalProps {
     currentBudget: Budget;

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import type { Goal, Budget, UserData } from '../types';
-import { UploadCloudIcon } from './icons';
+import type { Goal, UserData } from '@/types';
+import { UploadCloudIcon } from '@/components/icons';
 
 interface DashboardProps {
   userData: UserData;
@@ -24,7 +24,7 @@ const StatCard: React.FC<{ title: string; value: string; children?: React.ReactN
 );
 
 const WelcomeCard: React.FC<{ onUploadClick: () => void }> = ({ onUploadClick }) => (
-    <div className="bg-surface p-8 rounded-xl border border-slate-700/50 text-center col-span-1 lg:col-span-3">
+    <div className="bg-surface p-8 rounded-xl border border-slate-700/50 text-center col-span-1 lg:col-span-2">
         <h2 className="text-2xl font-bold text-text-primary">Welcome to FinTrack AI!</h2>
         <p className="text-text-secondary mt-2 mb-6 max-w-xl mx-auto">Get started by importing your SMS transaction history. Our AI will automatically categorize and analyze your spending.</p>
         <button

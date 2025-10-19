@@ -1,64 +1,49 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { apiService } from '@/services/apiService';
+import { useApp } from '@/components/ThemeContext';
+import Login from '@/components/Login';
+import Header from '@/components/Header';
+import Sidebar from '@/components/AppTabs';
+import BottomNav from '@/components/BottomNav';
+import Dashboard from '@/components/Dashboard';
+import Reports from '@/components/Reports';
+import TransactionList from '@/components/TransactionList';
+import TransactionFilters from '@/components/TransactionFilters';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import FileUploader from '@/components/FileUploader';
+import AddTransactionModal from '@/components/AddTransactionModal';
+import EditTransactionModal from '@/components/EditTransactionModal';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
+import BudgetModal from '@/components/BudgetModal';
+import GoalModal from '@/components/GoalModal';
+import FundGoalModal from '@/components/FundGoalModal';
+import SavingsModal from '@/components/SavingsModal';
+import EditBalanceModal from '@/components/EditBalanceModal';
+import SettingsModal from '@/components/SettingsModal';
+import CategoryModal from '@/components/CategoryModal';
+import ToastContainer from '@/components/NotificationBanner';
+import type { UserData, View, ModalState, Transaction, Goal, FilterState } from '@/types';
 
-// Components
-import Login from './components/Login';
-import Header from './components/Header';
-import Sidebar from './components/AppTabs';
-import BottomNav from './components/BottomNav';
-import Dashboard from './components/Dashboard';
-import TransactionList from './components/TransactionList';
-import Reports from './components/Reports';
-import TransactionFilters from './components/TransactionFilters';
-import LoadingOverlay from './components/LoadingOverlay';
-import ToastContainer from './components/NotificationBanner';
-import AddTransactionModal from './components/AddTransactionModal';
-import EditTransactionModal from './components/EditTransactionModal';
-import BudgetModal from './components/BudgetModal';
-import GoalModal from './components/GoalModal';
-import SavingsModal from './components/SavingsModal';
-import FundGoalModal from './components/FundGoalModal';
-import EditBalanceModal from './components/EditBalanceModal';
-import SettingsModal from './components/SettingsModal';
-import CategoryModal from './components/CategoryModal';
-import ConfirmDeleteModal from './components/ConfirmDeleteModal';
-
-// Services and types
-import { apiService } from './services/apiService';
-import { useApp } from './components/ThemeContext';
-import type { UserData, View, Transaction, Goal, FilterState, ModalState, Budget } from './types';
-
-const defaultUserData: Omit<UserData, 'username'> = {
-    transactions: [],
-    goals: [],
-    budget: { type: 'monthly', limit: 20000 },
-    savings: 0,
-    totalBalance: 0,
-    currency: '₹',
-    categories: ['Food', 'Transport', 'Shopping', 'Utilities', 'Entertainment', 'Health', 'Other'],
-};
-
-function App() {
-    const { addToast } = useApp();
-    const [appIsLoading, setAppIsLoading] = useState(true);
+const App: React.FC = () => {
+    const [isAppLoading, setIsAppLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [userData, setUserData] = useState<UserData | null>(null);
     const [currentView, setCurrentView] = useState<View>('dashboard');
-    const [filters, setFilters] = useState<FilterState>({
-        searchTerm: '', category: '', type: 'all', startDate: '', endDate: '', excludeBudgedExempt: false
-    });
     const [modalState, setModalState] = useState<ModalState>({ type: null, props: {} });
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showFileUploader, setShowFileUploader] = useState(false);
+    const { addToast } = useApp();
+    const [filters, setFilters] = useState<FilterState>({
+        searchTerm: '', category: '', type: 'all', startDate: '', endDate: '', excludeBudgedExempt: false,
+    });
 
     const checkAuthentication = useCallback(async () => {
-        setAppIsLoading(true);
+        setIsAppLoading(true);
         const authData = await apiService.checkAuth();
         if (authData?.username) {
             const data = await apiService.getUserData();
-            setUserData(data ?? { ...defaultUserData, username: authData.username });
-        } else {
-            setUserData(null);
+            if (data) setUserData(data);
         }
-        setAppIsLoading(false);
+        setIsAppLoading(false);
     }, []);
 
     useEffect(() => {
@@ -69,8 +54,9 @@ function App() {
         const success = await apiService.login(username);
         if (success) {
             await checkAuthentication();
-            addToast(`Welcome, ${username}!`, 'success');
+            addToast('Login successful!', 'success');
         } else {
+            addToast('Login failed. Please try again.', 'error');
             throw new Error("Login failed");
         }
     };
@@ -78,251 +64,101 @@ function App() {
     const handleLogout = () => {
         apiService.logout();
         setUserData(null);
-        setCurrentView('dashboard');
-        addToast("You've been logged out.", 'info');
+        addToast('You have been logged out.', 'info');
     };
 
-    const updateUserData = useCallback((updates: Partial<UserData>) => {
-        setUserData(prevData => {
-            if (!prevData) return null;
-            const newData = { ...prevData, ...updates };
-            apiService.saveAllData(newData);
-            return newData;
-        });
-    }, []);
-
-    const handleUploadClick = () => fileInputRef.current?.click();
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !userData) return;
-        
-        setIsProcessing(true);
-        try {
-            const newTransactionsRaw = await apiService.parseSmsFile(file);
-            const newTransactions: Transaction[] = newTransactionsRaw.map((tx, i) => ({ ...tx, id: `sms-${Date.now()}-${i}`}));
-
-            let newBalance = userData.totalBalance;
-            const newCategories = new Set(userData.categories);
-            let addedCount = 0;
-            
-            const transactionsToAdd = newTransactions.filter(
-              (newTx) => !userData.transactions.some(
-                (existingTx) => 
-                  existingTx.date === newTx.date &&
-                  existingTx.amount === newTx.amount &&
-                  existingTx.type === newTx.type &&
-                  (existingTx.merchant?.toLowerCase() === newTx.merchant?.toLowerCase() || existingTx.description?.toLowerCase() === newTx.description?.toLowerCase())
-              )
-            );
-
-            transactionsToAdd.forEach(tx => {
-                newBalance += tx.type === 'credit' ? tx.amount : -tx.amount;
-                if (tx.category && !userData.categories.includes(tx.category)) {
-                    newCategories.add(tx.category);
-                }
-                addedCount++;
-            });
-            
-            updateUserData({
-                transactions: [...transactionsToAdd, ...userData.transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-                totalBalance: newBalance,
-                categories: Array.from(newCategories).sort(),
-            });
-
-            addToast(`Successfully imported ${addedCount} new transactions.`, 'success');
-        } catch (error: any) {
-            addToast(error.message || 'Failed to process file.', 'error');
-        } finally {
-            setIsProcessing(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        }
-    };
-    
-    const filteredTransactions = useMemo(() => {
-        if (!userData) return [];
-        return userData.transactions.filter(tx => {
-            const searchTermLower = filters.searchTerm.toLowerCase();
-            const searchMatch = !filters.searchTerm || tx.merchant.toLowerCase().includes(searchTermLower) || tx.description.toLowerCase().includes(searchTermLower);
-            const categoryMatch = !filters.category || tx.category === filters.category;
-            const typeMatch = filters.type === 'all' || tx.type === filters.type;
-            const startDateMatch = !filters.startDate || tx.date >= filters.startDate;
-            const endDateMatch = !filters.endDate || tx.date <= filters.endDate;
-            const budgetExemptMatch = !filters.excludeBudgedExempt || !tx.excludeFromBudget;
-            return searchMatch && categoryMatch && typeMatch && startDateMatch && endDateMatch && budgetExemptMatch;
-        });
-    }, [userData, filters]);
-    
-    const openModal = (type: ModalState['type'], props: ModalState['props'] = {}) => setModalState({ type, props });
-    const closeModal = () => setModalState({ type: null, props: {} });
-
-    const handleSetBudget = (newBudget: Budget) => {
-        updateUserData({ budget: newBudget });
-        addToast('Budget updated!', 'success');
-    };
-    
-    const handleAddGoal = (name: string, targetAmount: number) => {
+    const updateUserData = useCallback(async (updates: Partial<UserData>) => {
         if (!userData) return;
-        const newGoal: Goal = { id: `goal_${Date.now()}`, name, targetAmount, currentAmount: 0 };
-        updateUserData({ goals: [...userData.goals, newGoal] });
-        addToast('New goal added!', 'success');
-    };
-    
-    const handleAddToSavings = (amount: number) => {
-        if (!userData || userData.totalBalance < amount) {
-            addToast('Insufficient balance to add to savings.', 'error');
-            return;
-        }
-        updateUserData({
-            savings: userData.savings + amount,
-            totalBalance: userData.totalBalance - amount
-        });
-        addToast('Added to savings!', 'success');
-    };
+        const optimisticData = { ...userData, ...updates };
+        setUserData(optimisticData);
+        const dataToSave = { ...optimisticData };
+        delete (dataToSave as Partial<UserData>).username;
+        await apiService.saveAllData(dataToSave);
+    }, [userData]);
 
-    const handleEditBalance = (newBalance: number) => {
-        updateUserData({ totalBalance: newBalance });
-        addToast('Total balance updated.', 'success');
-    };
-
-    const handleFundGoal = (goalId: string, amount: number) => {
-        if (!userData || userData.totalBalance < amount) {
-            addToast('Insufficient balance to fund goal.', 'error');
-            return;
-        }
-        const updatedGoals = userData.goals.map(g => g.id === goalId ? { ...g, currentAmount: g.currentAmount + amount } : g);
-        updateUserData({
-            goals: updatedGoals,
-            totalBalance: userData.totalBalance - amount,
-        });
-        addToast('Goal funded!', 'success');
-    };
-
-    const handleSaveCurrency = (newCurrency: string) => {
-        updateUserData({ currency: newCurrency });
-        addToast('Currency updated!', 'success');
-    };
-
-    const handleAddCategory = (categoryName: string) => {
+    const handleDeleteTransaction = (transaction: Transaction) => {
         if (!userData) return;
-        const newCategories = [...userData.categories, categoryName].sort();
-        updateUserData({ categories: newCategories });
-    };
-    
-    const handleDeleteTransaction = (tx: Transaction) => {
-        if(!userData) return;
-        const balanceChange = tx.type === 'credit' ? -tx.amount : tx.amount;
+        const balanceChange = transaction.type === 'credit' ? -transaction.amount : transaction.amount;
         updateUserData({
-            transactions: userData.transactions.filter(t => t.id !== tx.id),
+            transactions: userData.transactions.filter(t => t.id !== transaction.id),
             totalBalance: userData.totalBalance + balanceChange,
         });
         addToast('Transaction deleted.', 'success');
         closeModal();
-    }
-    
-    if (appIsLoading) {
-        return <div className="min-h-screen bg-background" />;
-    }
-    
-    if (!userData) {
-        return <Login onLogin={handleLogin} />;
-    }
-
-    const renderView = () => {
-        switch (currentView) {
-            case 'dashboard':
-                return <Dashboard 
-                    userData={userData} 
-                    updateUserData={updateUserData}
-                    onSetBudget={() => openModal('budget')}
-                    onAddGoal={() => openModal('goal')}
-                    onAddToSavings={() => openModal('savings')}
-                    onEditBalance={() => openModal('editBalance')}
-                    onFundGoal={(goal) => openModal('fundGoal', { goal })}
-                    onUploadClick={handleUploadClick}
-                />;
-            case 'transactions':
-                return (
-                    <div className="space-y-6">
-                        <TransactionFilters 
-                            categories={userData.categories}
-                            filters={filters}
-                            onFilterChange={setFilters}
-                        />
-                        <TransactionList 
-                            transactions={filteredTransactions} 
-                            userData={userData} 
-                            onEditTransaction={(transaction) => openModal('editTransaction', { transaction })}
-                            onDeleteTransaction={(transaction) => openModal('confirmDelete', { transaction })}
-                        />
-                    </div>
-                );
-            case 'reports':
-                return <Reports transactions={filteredTransactions} currency={userData.currency} />;
-            default:
-                return null;
-        }
     };
+    
+    const openModal = (type: ModalState['type'], props: ModalState['props'] = {}) => {
+        setModalState({ type, props });
+    };
+
+    const closeModal = () => setModalState({ type: null, props: {} });
+    
+    const filteredTransactions = useMemo(() => {
+        if (!userData) return [];
+        return userData.transactions.filter(tx => {
+            const searchTermMatch = filters.searchTerm ?
+                tx.merchant.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+                tx.description.toLowerCase().includes(filters.searchTerm.toLowerCase()) : true;
+            const categoryMatch = filters.category ? tx.category === filters.category : true;
+            const typeMatch = filters.type !== 'all' ? tx.type === filters.type : true;
+            const startDateMatch = filters.startDate ? tx.date >= filters.startDate : true;
+            const endDateMatch = filters.endDate ? tx.date <= filters.endDate : true;
+            const budgetExemptMatch = filters.excludeBudgedExempt ? !tx.excludeFromBudget : true;
+            return searchTermMatch && categoryMatch && typeMatch && startDateMatch && endDateMatch && budgetExemptMatch;
+        });
+    }, [userData?.transactions, filters]);
 
     const renderModal = () => {
-        if (!modalState.type) return null;
-
-        switch(modalState.type) {
-            case 'addTransaction':
-                return <AddTransactionModal userData={userData} updateUserData={updateUserData} onClose={closeModal} />;
-            case 'editTransaction':
-                if (!modalState.props.transaction) return null;
-                return <EditTransactionModal transaction={modalState.props.transaction} userData={userData} updateUserData={updateUserData} onClose={closeModal} />;
-            case 'budget':
-                return <BudgetModal currentBudget={userData.budget} currency={userData.currency} onSave={handleSetBudget} onClose={closeModal} />;
-            case 'goal':
-                return <GoalModal currency={userData.currency} onSave={handleAddGoal} onClose={closeModal} />;
-            case 'savings':
-                return <SavingsModal currency={userData.currency} onSave={handleAddToSavings} onClose={closeModal} />;
-            case 'fundGoal':
-                if (!modalState.props.goal) return null;
-                return <FundGoalModal goal={modalState.props.goal} currency={userData.currency} onSave={handleFundGoal} onClose={closeModal} />;
-            case 'editBalance':
-                return <EditBalanceModal currentBalance={userData.totalBalance} currency={userData.currency} onSave={handleEditBalance} onClose={closeModal} />;
-            case 'settings':
-                return <SettingsModal userData={userData} onSaveCurrency={handleSaveCurrency} onManageCategories={() => openModal('categories')} onClose={closeModal} />;
-            case 'categories':
-                return <CategoryModal categories={userData.categories} onAddCategory={handleAddCategory} onClose={closeModal} />;
-            case 'confirmDelete':
-                 if (!modalState.props.transaction) return null;
-                 return <ConfirmDeleteModal transaction={modalState.props.transaction} onConfirm={() => handleDeleteTransaction(modalState.props.transaction!)} onClose={closeModal} />;
-            default:
-                return null;
+        if (!userData) return null;
+        switch (modalState.type) {
+            case 'addTransaction': return <AddTransactionModal userData={userData} updateUserData={updateUserData} onClose={closeModal} />;
+            case 'editTransaction': return modalState.props.transaction && <EditTransactionModal transaction={modalState.props.transaction} userData={userData} updateUserData={updateUserData} onClose={closeModal} />;
+            case 'confirmDelete': return modalState.props.transaction && <ConfirmDeleteModal transaction={modalState.props.transaction} onConfirm={() => handleDeleteTransaction(modalState.props.transaction!)} onClose={closeModal} />;
+            case 'budget': return <BudgetModal currentBudget={userData.budget} currency={userData.currency} onSave={budget => updateUserData({ budget })} onClose={closeModal} />;
+            case 'goal': return <GoalModal currency={userData.currency} onSave={(name, targetAmount) => updateUserData({ goals: [...userData.goals, { id: `goal_${Date.now()}`, name, targetAmount, currentAmount: 0 }] })} onClose={closeModal} />;
+            case 'fundGoal': return modalState.props.goal && <FundGoalModal goal={modalState.props.goal} currency={userData.currency} onSave={(goalId, amount) => { const newGoals = userData.goals.map(g => g.id === goalId ? { ...g, currentAmount: g.currentAmount + amount } : g); updateUserData({ goals: newGoals }); }} onClose={closeModal} />;
+            case 'savings': return <SavingsModal currency={userData.currency} onSave={amount => updateUserData({ savings: userData.savings + amount })} onClose={closeModal} />;
+            case 'editBalance': return <EditBalanceModal currentBalance={userData.totalBalance} currency={userData.currency} onSave={newBalance => updateUserData({ totalBalance: newBalance })} onClose={closeModal} />;
+            case 'settings': return <SettingsModal userData={userData} onSaveCurrency={currency => updateUserData({ currency })} onManageCategories={() => openModal('categories')} onClose={closeModal} />;
+            case 'categories': return <CategoryModal categories={userData.categories} onAddCategory={name => updateUserData({ categories: [...userData.categories, name].sort() })} onClose={() => openModal('settings')} />;
+            default: return null;
         }
     };
-    
+
+    const renderView = () => {
+        if (!userData) return null;
+        switch (currentView) {
+            case 'dashboard': return <Dashboard userData={userData} updateUserData={updateUserData} onSetBudget={() => openModal('budget')} onAddGoal={() => openModal('goal')} onAddToSavings={() => openModal('savings')} onEditBalance={() => openModal('editBalance')} onFundGoal={(goal: Goal) => openModal('fundGoal', { goal })} onUploadClick={() => setShowFileUploader(true)} />;
+            case 'reports': return <Reports transactions={filteredTransactions} currency={userData.currency} />;
+            case 'transactions': return (
+                <div className="space-y-6">
+                    <TransactionFilters categories={userData.categories} filters={filters} onFilterChange={setFilters} />
+                    <TransactionList transactions={filteredTransactions} userData={userData} onEditTransaction={(tx) => openModal('editTransaction', { transaction: tx })} onDeleteTransaction={(tx) => openModal('confirmDelete', { transaction: tx })} />
+                </div>
+            );
+            default: return null;
+        }
+    };
+
+    if (isAppLoading) return <LoadingOverlay />;
+    if (!userData) return <Login onLogin={handleLogin} />;
+
     return (
         <div className="flex h-screen bg-background text-text-primary">
-            <Sidebar 
-                currentView={currentView}
-                setView={setCurrentView}
-                onAddTransaction={() => openModal('addTransaction')}
-                onUploadClick={handleUploadClick}
-            />
+            <Sidebar currentView={currentView} setView={setCurrentView} onAddTransaction={() => openModal('addTransaction')} onUploadClick={() => setShowFileUploader(true)} />
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Header 
-                    username={userData.username}
-                    onLogout={handleLogout}
-                    onOpenSettings={() => openModal('settings')}
-                    onUploadClick={handleUploadClick}
-                />
-                <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                <Header username={userData.username} onLogout={handleLogout} onOpenSettings={() => openModal('settings')} onUploadClick={() => setShowFileUploader(true)} />
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8">
                     {renderView()}
                 </main>
                 <BottomNav currentView={currentView} setView={setCurrentView} />
             </div>
-            
-            {isProcessing && <LoadingOverlay />}
-            {renderModal()}
+            {(isProcessing) && <LoadingOverlay />}
+            {modalState.type && renderModal()}
+            {showFileUploader && <FileUploader onClose={() => setShowFileUploader(false)} onUploadSuccess={() => { checkAuthentication(); addToast('File processed successfully!', 'success'); }} setIsProcessing={setIsProcessing} />}
             <ToastContainer />
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.text" />
         </div>
     );
-}
+};
 
 export default App;

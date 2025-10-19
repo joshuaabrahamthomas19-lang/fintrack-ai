@@ -1,5 +1,6 @@
 import React from 'react';
-import type { View } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { View } from '@/types';
 import { LogoIcon, DashboardIcon, ReportsIcon, TransactionsIcon, AddIcon, UploadCloudIcon } from './icons';
 
 interface SidebarProps {

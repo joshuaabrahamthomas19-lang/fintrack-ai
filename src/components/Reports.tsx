@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import type { Transaction } from '../types';
-import BarChart from './charts/BarChart';
-import DoughnutChart from './charts/DoughnutChart';
-import { generateReportPdf } from '../services/pdfService';
-import { DownloadIcon } from './icons';
+import type { Transaction } from '@/types';
+import BarChart from '@/components/charts/BarChart';
+import DoughnutChart from '@/components/charts/DoughnutChart';
+import { generateReportPdf } from '@/services/pdfService';
+import { DownloadIcon } from '@/components/icons';
 
 interface ReportsProps {
     transactions: Transaction[];
@@ -21,12 +21,12 @@ const Reports: React.FC<ReportsProps> = ({ transactions, currency }) => {
     const reportId = "financial-report-container";
 
     const { totalIncome, totalExpenses, spendingByCategory, monthlyData } = useMemo(() => {
-        const income = transactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + Number(t.amount), 0);
-        const expenses = transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + Number(t.amount), 0);
+        const income = transactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0);
+        const expenses = transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0);
 
         const categoryMap = transactions.filter(t => t.type === 'debit').reduce((acc, t) => {
             const key = t.category || 'Uncategorized';
-            acc[key] = (acc[key] || 0) + Number(t.amount);
+            acc[key] = (acc[key] || 0) + t.amount;
             return acc;
         }, {} as Record<string, number>);
         
@@ -39,7 +39,12 @@ const Reports: React.FC<ReportsProps> = ({ transactions, currency }) => {
             const date = new Date(t.date);
             if (!isNaN(date.getTime())) {
                 const month = date.getMonth();
-                t.type === 'credit' ? monthlySummary.income[month] += Number(t.amount) : monthlySummary.expenses[month] += Number(t.amount);
+                // FIX: Rewrote ternary operator to a clearer if/else statement to avoid potential linting/parsing errors.
+                if (t.type === 'credit') {
+                    monthlySummary.income[month] += t.amount;
+                } else {
+                    monthlySummary.expenses[month] += t.amount;
+                }
             }
         });
 

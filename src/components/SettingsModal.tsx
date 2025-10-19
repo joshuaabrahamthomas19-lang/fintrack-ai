@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
-import { useApp } from './ThemeContext';
-import { UserData } from '../types';
+import Modal, { ModalButton, ModalInput, ModalLabel } from '@/components/Modal';
+import { useApp } from '@/components/ThemeContext';
+import { UserData } from '@/types';
 
 interface SettingsModalProps {
     userData: UserData;

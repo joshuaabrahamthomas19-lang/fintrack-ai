@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
-import type { Transaction, UserData } from '../types';
+import Modal, { ModalButton, ModalInput, ModalLabel } from '@/components/Modal';
+import type { Transaction, UserData } from '@/types';
 
 interface EditTransactionModalProps {
     transaction: Transaction;

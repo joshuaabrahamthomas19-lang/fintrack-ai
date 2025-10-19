@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import type { Goal, Budget, UserData } from '../types';
-import { UploadCloudIcon, ArrowUpIcon, ArrowDownIcon } from './icons';
+import type { Goal, UserData } from '../types';
+import { UploadCloudIcon } from './icons';
 
 interface DashboardProps {
   userData: UserData;

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import type { FilterState } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import type { FilterState } from '@/types';
 import { FilterIcon, CalendarIcon, SearchIcon } from './icons';
 
 interface TransactionFiltersProps {

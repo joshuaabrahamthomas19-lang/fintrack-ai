@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
 import { useApp } from './ThemeContext';
-import { UserData } from '../types';
+// FIX: Corrected import path for types using alias for robustness.
+import { UserData } from '@/types';
 
 interface SettingsModalProps {
     userData: UserData;

@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { apiService } from '../services/apiService';
-import { useApp } from './ThemeContext';
-import { UploadCloudIcon } from './icons';
+import { apiService } from '@/services/apiService';
+import { useApp } from '@/components/ThemeContext';
+import { UploadCloudIcon } from '@/components/icons';
 
 interface FileUploaderProps {
     onClose: () => void;
