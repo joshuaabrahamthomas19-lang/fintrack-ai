@@ -4,7 +4,8 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
+// FIX: Removed unused HarmCategory and HarmBlockThreshold imports.
+import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import helmet from 'helmet';
 
@@ -47,7 +48,8 @@ const db = new Low(adapter, defaultData);
 await db.read();
 
 // --- Gemini API Setup ---
-const genAI = new GoogleGenAI(process.env.API_KEY);
+// FIX: Correctly initialize GoogleGenAI with a named apiKey parameter.
+const genAI = new GoogleGenAI({apiKey: process.env.API_KEY});
 
 // --- JWT Middleware ---
 const authenticateToken = (req, res, next) => {
@@ -126,7 +128,7 @@ app.post('/api/parse-sms', authenticateToken, upload.single('file'), async (req,
 
         const response = await genAI.models.generateContent({
             model: model,
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: prompt,
             config: {
                 responseMimeType: 'application/json',
             }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { FilterState } from '../types';
-import { FilterIcon, CalendarIcon, SearchIcon } from './icons';
+import { FilterIcon, SearchIcon } from './icons';
 
 interface TransactionFiltersProps {
     categories: string[];

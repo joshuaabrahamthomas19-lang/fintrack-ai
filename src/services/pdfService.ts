@@ -22,7 +22,7 @@ export const generateTransactionsPdf = (transactions: Transaction[], currency: s
         tableRows.push(txData);
     });
 
-    doc.autoTable({
+    (doc as any).autoTable({
         head: [tableColumn],
         body: tableRows,
         startY: 20,

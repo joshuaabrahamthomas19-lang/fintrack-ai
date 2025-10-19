@@ -6,12 +6,11 @@ import { generateTransactionsPdf } from '../services/pdfService';
 interface TransactionListProps {
     transactions: Transaction[];
     userData: UserData;
-    updateUserData: (updates: Partial<UserData>) => void;
     onEditTransaction: (transaction: Transaction) => void;
     onDeleteTransaction: (transaction: Transaction) => void;
 }
 
-const TransactionList: React.FC<TransactionListProps> = ({ transactions, userData, updateUserData, onEditTransaction, onDeleteTransaction }) => {
+const TransactionList: React.FC<TransactionListProps> = ({ transactions, userData, onEditTransaction, onDeleteTransaction }) => {
 
     const handleDownload = () => {
         generateTransactionsPdf(transactions, userData.currency);

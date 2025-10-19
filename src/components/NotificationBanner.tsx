@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from './ThemeContext';
-import { InfoIcon, WarningIcon, CheckCircleIcon, CloseIcon } from './icons';
+import { InfoIcon, WarningIcon, CheckCircleIcon } from './icons';
 
 const Toast: React.FC<{ message: string; type: 'success' | 'error' | 'info' }> = ({ message, type }) => {
     const iconMap = {
