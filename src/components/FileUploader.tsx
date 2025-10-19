@@ -1,93 +1,116 @@
 import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-// FIX: Using relative paths to fix module resolution issues.
-import { apiService } from '../services/apiService';
-import { useApp } from './ThemeContext';
-import { UploadCloudIcon } from './icons';
+import { UploadCloud } from 'lucide-react';
+import { getTextFromPdf } from '@/services/pdfService';
+import { parseTransactionsFromText } from '@/services/geminiService';
+import * as api from '@/services/apiService';
+import { Transaction } from '@/types';
 
 interface FileUploaderProps {
-    onClose: () => void;
-    onUploadSuccess: () => void;
-    setIsProcessing: (isProcessing: boolean) => void;
+  onUploadSuccess: (newTransactions: Transaction[]) => void;
+  onUploadError: (errorMessage: string) => void;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ onClose, onUploadSuccess, setIsProcessing }) => {
-    const [file, setFile] = useState<File | null>(null);
-    const [error, setError] = useState('');
-    const { addToast } = useApp();
+const FileUploader: React.FC<FileUploaderProps> = ({ onUploadSuccess, onUploadError }) => {
+  const [isParsing, setIsParsing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        if (acceptedFiles.length > 0) {
-            setFile(acceptedFiles[0]);
-            setError('');
-        }
-    }, []);
+  const handleFileParse = useCallback(async (file: File) => {
+    setIsParsing(true);
+    onUploadError(''); // Clear previous errors
+    try {
+      let textContent = '';
+      if (file.type === 'application/pdf') {
+        textContent = await getTextFromPdf(file);
+      } else if (file.type === 'text/plain' || file.type === 'text/csv') {
+        textContent = await file.text();
+      } else {
+        throw new Error('Unsupported file type. Please upload a PDF, TXT or CSV file.');
+      }
 
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: { 'text/plain': ['.txt'] },
-        multiple: false
-    });
+      if (!textContent.trim()) {
+        throw new Error('File is empty or could not be read.');
+      }
+      
+      const parsedData = await parseTransactionsFromText(textContent);
+      if(parsedData.length === 0) {
+        throw new Error("No transactions were found in the file.");
+      }
+      
+      // Add transactions to the database
+      const newTransactions = await api.addTransactionsBatch(parsedData);
+      onUploadSuccess(newTransactions);
 
-    const handleUpload = async () => {
-        if (!file) {
-            setError('Please select a file first.');
-            return;
-        }
-        setIsProcessing(true);
-        onClose();
-        try {
-            await apiService.parseSmsFile(file);
-            onUploadSuccess();
-        } catch (err: any) {
-            console.error('Upload error:', err);
-            addToast(err.message || 'Failed to process file.', 'error');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+    } catch (error: any) {
+      console.error(error);
+      onUploadError(error.message || 'An unknown error occurred during parsing.');
+    } finally {
+      setIsParsing(false);
+    }
+  }, [onUploadSuccess, onUploadError]);
 
-    return (
-        <div 
-            className="fixed inset-0 z-40 flex justify-center items-center p-4" 
-            aria-modal="true"
-        >
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose}></div>
-            <div className="bg-surface rounded-xl shadow-lg w-full max-w-lg border border-slate-700/50 z-50 animate-fade-in-up">
-                 <div className="flex justify-between items-center p-4 border-b border-slate-700/50">
-                    <h2 className="text-lg font-semibold text-text-primary">Import SMS Transactions</h2>
-                    <button onClick={onClose} className="text-text-muted hover:text-text-primary rounded-full p-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <div className="p-6">
-                    <div
-                        {...getRootProps()}
-                        className={`w-full p-12 border-2 border-dashed rounded-lg cursor-pointer flex flex-col items-center justify-center text-center transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-slate-600 hover:border-slate-500'}`}
-                    >
-                        <input {...getInputProps()} />
-                        <UploadCloudIcon />
-                        {isDragActive ? (
-                            <p className="mt-2 text-text-primary">Drop the file here...</p>
-                        ) : (
-                            <p className="mt-2 text-text-secondary">Drag 'n' drop a .txt file here, or click to select</p>
-                        )}
-                    </div>
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileParse(file);
+    }
+  };
 
-                    {file && (
-                        <div className="mt-4 text-center text-sm text-text-primary">
-                            Selected file: <span className="font-semibold">{file.name}</span>
-                        </div>
-                    )}
-                    {error && <p className="mt-2 text-center text-sm text-danger">{error}</p>}
-                </div>
-                <div className="p-4 bg-background rounded-b-xl flex justify-end space-x-3">
-                    <button onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
-                    <button onClick={handleUpload} disabled={!file} className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50">Upload & Process</button>
-                </div>
-            </div>
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      handleFileParse(file);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  
+  const handleDragEnter = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  return (
+    <div className="w-full">
+      <label
+        htmlFor="file-upload"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+        ${isDragging ? 'border-primary bg-surface' : 'border-gray-600 bg-gray-800 hover:bg-gray-700'}
+        ${isParsing ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+          <UploadCloud className={`w-10 h-10 mb-3 ${isDragging ? 'text-primary' : 'text-gray-400'}`} />
+          {isParsing ? (
+            <p className="text-sm text-gray-400">Parsing your file with AI...</p>
+          ) : (
+            <>
+              <p className="mb-2 text-sm text-gray-400">
+                <span className="font-semibold">Click to upload</span> or drag and drop
+              </p>
+              <p className="text-xs text-gray-500">PDF, TXT, or CSV files</p>
+            </>
+          )}
         </div>
-    );
+        <input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.txt,.csv" disabled={isParsing} />
+      </label>
+    </div>
+  );
 };
 
 export default FileUploader;

@@ -1,82 +1,182 @@
-import React, { useState } from 'react';
-// FIX: Using relative paths to fix module resolution issues.
-import { useApp } from './components/ThemeContext';
-import Header from './components/Header';
-import Dashboard from './components/Dashboard';
-import Reports from './components/Reports';
-import LoadingOverlay from './components/LoadingOverlay';
-import AddTransactionModal from './components/AddTransactionModal';
-import EditTransactionModal from './components/EditTransactionModal';
-import NotificationBanner from './components/NotificationBanner';
-import BottomNav from './components/BottomNav';
-import BudgetModal from './components/BudgetModal';
-import GoalModal from './components/GoalModal';
-import SavingsModal from './components/SavingsModal';
-import CategoryModal from './components/CategoryModal';
-import SettingsModal from './components/SettingsModal';
-import FundGoalModal from './components/FundGoalModal';
-import EditBalanceModal from './components/EditBalanceModal';
-import ConfirmDeleteModal from './components/ConfirmDeleteModal';
-import FileUploader from './components/FileUploader';
-import { Transaction } from './types';
+import React, { useState, useEffect, useCallback } from 'react';
+import Header from '@/components/Header';
+import Dashboard from '@/components/Dashboard';
+import Reports from '@/components/Reports';
+import TransactionList from '@/components/TransactionList';
+import Login from '@/components/Login';
+import AddTransactionModal from '@/components/AddTransactionModal';
+import EditTransactionModal from '@/components/EditTransactionModal';
+import BudgetModal from '@/components/BudgetModal';
+import GoalModal from '@/components/GoalModal';
+import CategoryModal from '@/components/CategoryModal';
+import EditBalanceModal from '@/components/EditBalanceModal';
+import FundGoalModal from '@/components/FundGoalModal';
+import SettingsModal from '@/components/SettingsModal';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import NotificationBanner from '@/components/NotificationBanner';
+import BottomNav from '@/components/BottomNav';
+import { AppData, ModalType, Notification, Transaction, Goal } from '@/types';
+import * as api from '@/services/apiService';
 
+type View = 'dashboard' | 'transactions' | 'reports';
 
 const App: React.FC = () => {
-  const { isLoading, activeModal, setActiveModal, toasts, removeToast } = useApp();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
-  const [fundingGoalId, setFundingGoalId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [appData, setAppData] = useState<AppData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; type: string } | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [activeView, setActiveView] = useState<View>('dashboard');
 
-  const openModal = (modal: any, data?: any) => {
-    if (modal === 'editTransaction' && data) setEditingTransaction(data);
-    if (modal === 'confirmDelete' && data) setDeletingTransaction(data);
-    if (modal === 'fundGoal' && data) setFundingGoalId(data);
+  const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
+    const newNotification: Notification = { id: Date.now(), message, type };
+    setNotifications(prev => [...prev, newNotification]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
+    }, 5000);
+  };
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.getAppData();
+      setAppData(data);
+    } catch (error) {
+      showNotification('Failed to load data.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check for saved login state
+    const loggedIn = localStorage.getItem('isAuthenticated');
+    if (loggedIn === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      localStorage.setItem('isAuthenticated', 'true');
+      loadData();
+    } else {
+      localStorage.removeItem('isAuthenticated');
+    }
+  }, [isAuthenticated, loadData]);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setAppData(null);
+  };
+
+  const openModal = (modal: ModalType, data?: any) => {
+    if (modal === 'editTransaction' && data) setSelectedTransaction(data);
+    if (modal === 'fundGoal' && data) setSelectedGoal(data);
+    if (modal === 'confirmDelete' && data) setItemToDelete(data);
     setActiveModal(modal);
   };
-  
   const closeModal = () => {
-    setActiveModal(null);
-    setEditingTransaction(null);
-    setDeletingTransaction(null);
-    setFundingGoalId(null);
+      setActiveModal(null);
+      setSelectedTransaction(null);
+      setSelectedGoal(null);
+      setItemToDelete(null);
   };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (loading || !appData) {
+    return <LoadingOverlay message="Loading your financial data..." />;
+  }
+  
+  const renderView = () => {
+    switch(activeView) {
+      case 'dashboard':
+        return <Dashboard appData={appData} onOpenModal={openModal} refreshData={loadData} />;
+      case 'transactions':
+        return <TransactionList transactions={appData.transactions} onEdit={tx => openModal('editTransaction', tx)} onDelete={id => openModal('confirmDelete', { id, type: 'transaction' })} />;
+      case 'reports':
+        return <Reports appData={appData} />;
+      default:
+        return <Dashboard appData={appData} onOpenModal={openModal} refreshData={loadData}/>;
+    }
+  }
 
   return (
     <div className="bg-background min-h-screen text-text-primary font-sans">
-      <Header />
-      <main className="pb-20">
-        <div className="container mx-auto p-4">
-          {activeTab === 'dashboard' && <Dashboard openModal={openModal} />}
-          {activeTab === 'reports' && <Reports />}
-        </div>
+      <Header onLogout={handleLogout} onOpenModal={openModal} />
+      <main className="p-4 sm:p-6 pb-20 sm:pb-6">
+        {renderView()}
       </main>
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      {isLoading && <LoadingOverlay />}
-      <NotificationBanner toasts={toasts} onDismiss={removeToast} />
-      
-      {activeModal === 'addTransaction' && <AddTransactionModal onClose={closeModal} />}
-      {activeModal === 'editTransaction' && editingTransaction && <EditTransactionModal transaction={editingTransaction} onClose={closeModal} />}
-      {activeModal === 'confirmDelete' && deletingTransaction && (
-          <ConfirmDeleteModal 
-              transaction={deletingTransaction} 
-              onConfirm={() => {
-                // The actual deletion is handled in ThemeContext, which is called by the modal
-                closeModal();
-              }} 
-              onClose={closeModal} 
-          />
+      <BottomNav activeView={activeView} setActiveView={setActiveView} onAddTransaction={() => openModal('addTransaction')}/>
+
+      {activeModal === 'addTransaction' && (
+        <AddTransactionModal
+          onClose={closeModal}
+          onSuccess={() => {
+            loadData();
+            showNotification('Transaction added successfully!', 'success');
+            closeModal();
+          }}
+          categories={appData.categories}
+        />
       )}
-      {activeModal === 'budget' && <BudgetModal onClose={closeModal} />}
-      {activeModal === 'goal' && <GoalModal onClose={closeModal} />}
-      {activeModal === 'savings' && <SavingsModal onClose={closeModal} />}
-      {activeModal === 'category' && <CategoryModal onClose={closeModal} />}
+      {activeModal === 'editTransaction' && selectedTransaction && (
+        <EditTransactionModal
+          transaction={selectedTransaction}
+          onClose={closeModal}
+          onSuccess={() => {
+            loadData();
+            showNotification('Transaction updated successfully!', 'success');
+            closeModal();
+          }}
+          categories={appData.categories}
+        />
+      )}
+      {activeModal === 'editBalance' && (
+        <EditBalanceModal
+          currentBalance={appData.balance}
+          onClose={closeModal}
+          onSuccess={() => {
+            loadData();
+            showNotification('Balance updated successfully!', 'success');
+            closeModal();
+          }}
+        />
+      )}
+      {activeModal === 'budget' && <BudgetModal onClose={closeModal} onSuccess={() => { loadData(); closeModal(); }} appData={appData} />}
+      {activeModal === 'category' && <CategoryModal onClose={closeModal} onSuccess={() => { loadData(); closeModal(); }} />}
+      {activeModal === 'goal' && <GoalModal onClose={closeModal} onSuccess={() => { loadData(); closeModal(); }} />}
+      {activeModal === 'fundGoal' && selectedGoal && <FundGoalModal goal={selectedGoal} balance={appData.balance} onClose={closeModal} onSuccess={() => { loadData(); closeModal(); }} />}
       {activeModal === 'settings' && <SettingsModal onClose={closeModal} />}
-      {activeModal === 'fundGoal' && fundingGoalId && <FundGoalModal goalId={fundingGoalId} onClose={closeModal} />}
-      {activeModal === 'editBalance' && <EditBalanceModal onClose={closeModal} />}
-      {activeModal === 'upload' && <FileUploader onClose={closeModal} onUploadSuccess={() => {}} setIsProcessing={() => {}} />}
+      {activeModal === 'confirmDelete' && itemToDelete && (
+        <ConfirmDeleteModal
+            itemType={itemToDelete.type}
+            onClose={closeModal}
+            onConfirm={async () => {
+                if(itemToDelete.type === 'transaction'){
+                    await api.deleteTransaction(itemToDelete.id);
+                    loadData();
+                    showNotification('Transaction deleted!', 'success');
+                }
+                closeModal();
+            }}
+        />
+      )}
+      <NotificationBanner notifications={notifications} />
     </div>
   );
 };

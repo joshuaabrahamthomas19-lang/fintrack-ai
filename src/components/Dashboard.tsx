@@ -1,77 +1,143 @@
 import React from 'react';
-// FIX: Using relative paths to fix module resolution issues.
-import { useApp } from './ThemeContext';
-import TransactionList from './TransactionList';
-import { Transaction } from '../types';
+import { AppData, Goal, ModalType } from '@/types';
+import { formatCurrency } from '@/utils/formatters';
+import { PlusCircle, Edit } from 'lucide-react';
 
 interface DashboardProps {
-    openModal: (modal: string, data?: any) => void;
+  appData: AppData;
+  onOpenModal: (modal: ModalType, data?: any) => void;
+  refreshData: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ openModal }) => {
-    const { transactions, goals, budgets, settings } = useApp();
+const Dashboard: React.FC<DashboardProps> = ({ appData, onOpenModal, refreshData }) => {
+  const { balance, transactions, budgets, goals } = appData;
 
-    const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = transactions.slice(0, 5);
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: settings.currency,
-        }).format(amount);
-    };
-
-    return (
-        <div className="space-y-6">
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left Column */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Balance Card */}
+        <div className="bg-surface rounded-lg p-6 shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-text-secondary">Current Balance</h2>
+            <button onClick={() => onOpenModal('editBalance')} className="p-1 text-text-muted hover:text-primary transition-colors">
+              <Edit size={16} />
+            </button>
+          </div>
+          <p className="text-4xl font-bold text-text-primary">{formatCurrency(balance)}</p>
+          <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-                <h2 className="text-2xl font-semibold mb-4 text-text-primary">Dashboard</h2>
+              <p className="text-sm text-text-muted">Income</p>
+              <p className="text-lg font-semibold text-green-400">{formatCurrency(totalIncome)}</p>
             </div>
-            
-            {/* Goals and Budgets Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-surface p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2 text-text-primary">Savings Goals</h3>
-                    <div className="space-y-2">
-                        {goals.length > 0 ? goals.map(goal => (
-                            <div key={goal.id}>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span>{goal.name}</span>
-                                    <span className="font-medium">{formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}</span>
-                                </div>
-                                <div className="w-full bg-background rounded-full h-2.5">
-                                    <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(goal.currentAmount / goal.targetAmount) * 100}%` }}></div>
-                                </div>
-                            </div>
-                        )) : <p className="text-sm text-text-muted">No goals set yet.</p>}
-                    </div>
-                </div>
-                <div className="bg-surface p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2 text-text-primary">Budgets</h3>
-                    <div className="space-y-2">
-                        {budgets.length > 0 ? budgets.map(budget => (
-                            <div key={budget.id}>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span>Category Name</span> {/* Replace with actual category name */}
-                                    <span className="font-medium">{formatCurrency(budget.spent)} / {formatCurrency(budget.limit)}</span>
-                                </div>
-                                <div className="w-full bg-background rounded-full h-2.5">
-                                    <div className="bg-secondary h-2.5 rounded-full" style={{ width: `${(budget.spent / budget.limit) * 100}%` }}></div>
-                                </div>
-                            </div>
-                        )) : <p className="text-sm text-text-muted">No budgets set yet.</p>}
-                    </div>
-                </div>
-            </div>
-
             <div>
-                <h3 className="text-xl font-semibold mb-4 text-text-primary">Recent Transactions</h3>
-                <TransactionList 
-                    transactions={recentTransactions} 
-                    onEdit={(t: Transaction) => openModal('editTransaction', t)} 
-                    onDelete={(t: Transaction) => openModal('confirmDelete', t)}
-                />
+              <p className="text-sm text-text-muted">Expenses</p>
+              <p className="text-lg font-semibold text-red-400">{formatCurrency(totalExpenses)}</p>
             </div>
+          </div>
         </div>
-    );
+
+        {/* Recent Transactions */}
+        <div className="bg-surface rounded-lg p-6 shadow-lg">
+          <h2 className="text-lg font-semibold text-text-secondary mb-4">Recent Transactions</h2>
+          <ul className="space-y-3">
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map(tx => (
+                <li key={tx.id} className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{tx.description}</p>
+                    <p className="text-sm text-text-muted">{tx.date} &bull; {tx.category}</p>
+                  </div>
+                  <p className={`font-semibold ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                    {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                  </p>
+                </li>
+              ))
+            ) : (
+              <p className="text-text-muted text-center py-4">No recent transactions.</p>
+            )}
+          </ul>
+        </div>
+      </div>
+
+      {/* Right Column */}
+      <div className="space-y-6">
+        {/* Budgets */}
+        <div className="bg-surface rounded-lg p-6 shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-text-secondary">Budgets</h2>
+            <button onClick={() => onOpenModal('budget')} className="text-primary hover:text-primary-light">
+              <PlusCircle size={20} />
+            </button>
+          </div>
+          <div className="space-y-4">
+            {budgets.length > 0 ? (
+              budgets.map(budget => (
+                <div key={budget.id}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">{budget.category}</span>
+                    <span className="text-text-muted">{formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full"
+                      style={{ width: `${Math.min((budget.spent / budget.amount) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-text-muted text-center py-4">No budgets set.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Savings Goals */}
+        <div className="bg-surface rounded-lg p-6 shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-text-secondary">Savings Goals</h2>
+            <button onClick={() => onOpenModal('goal')} className="text-primary hover:text-primary-light">
+              <PlusCircle size={20} />
+            </button>
+          </div>
+          <div className="space-y-4">
+            {goals.length > 0 ? (
+              goals.map(goal => (
+                <div key={goal.id}>
+                  <div className="flex justify-between items-center text-sm mb-1">
+                    <span className="font-medium">{goal.name}</span>
+                    <button
+                      onClick={() => onOpenModal('fundGoal', goal)}
+                      className="text-xs bg-primary-dark text-white px-2 py-1 rounded hover:bg-primary"
+                    >
+                      Fund
+                    </button>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2 my-1">
+                    <div
+                      className="bg-secondary h-2 rounded-full"
+                      style={{ width: `${Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-text-muted text-right">{formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-text-muted text-center py-4">No savings goals set.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;

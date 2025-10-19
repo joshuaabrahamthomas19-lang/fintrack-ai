@@ -1,46 +1,61 @@
 import React, { useState } from 'react';
-// FIX: Using relative paths to fix module resolution issues.
 import Modal from './Modal';
-import { useApp } from './ThemeContext';
+import * as api from '@/services/apiService';
 
 interface EditBalanceModalProps {
-    onClose: () => void;
+  currentBalance: number;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-const EditBalanceModal: React.FC<EditBalanceModalProps> = ({ onClose }) => {
-    const { balance, setBalance } = useApp();
-    const [newBalance, setNewBalance] = useState(balance.toString());
+const EditBalanceModal: React.FC<EditBalanceModalProps> = ({ currentBalance, onClose, onSuccess }) => {
+  const [newBalance, setNewBalance] = useState(String(currentBalance));
+  const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const value = parseFloat(newBalance);
-        if (!isNaN(value)) {
-            setBalance(value);
-            onClose();
-        }
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const balanceValue = parseFloat(newBalance);
+    if (isNaN(balanceValue)) {
+      setError('Please enter a valid number for the balance.');
+      return;
+    }
+    setError('');
 
-    return (
-        <Modal onClose={onClose} title="Edit Balance">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="balance" className="block text-sm font-medium text-text-secondary">Current Balance</label>
-                    <input
-                        type="number"
-                        id="balance"
-                        value={newBalance}
-                        onChange={(e) => setNewBalance(e.target.value)}
-                        className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary"
-                        required
-                    />
-                </div>
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
-                    <button type="submit" className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors">Set Balance</button>
-                </div>
-            </form>
-        </Modal>
-    );
+    try {
+      await api.updateBalance(balanceValue);
+      onSuccess();
+    } catch (err) {
+      setError('Failed to update balance.');
+    }
+  };
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Edit Balance">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="balance" className="block text-sm font-medium text-text-secondary mb-1">
+            Current Balance
+          </label>
+          <input
+            type="number"
+            id="balance"
+            value={newBalance}
+            onChange={(e) => setNewBalance(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <div className="flex justify-end gap-3 pt-4">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">
+            Cancel
+          </button>
+          <button type="submit" className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark transition-colors">
+            Save Balance
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
 };
 
 export default EditBalanceModal;

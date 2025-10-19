@@ -1,44 +1,54 @@
 import React from 'react';
-// FIX: Using relative paths to fix module resolution issues.
-import { useApp } from './ThemeContext';
-import { PlusCircleIcon, SettingsIcon } from './icons';
+import { LogOut, Settings, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/components/ThemeContext';
+import { ModalType } from '@/types';
 
-const Header: React.FC = () => {
-    const { balance, settings, setActiveModal } = useApp();
+interface HeaderProps {
+  onLogout: () => void;
+  onOpenModal: (modal: ModalType) => void;
+}
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: settings.currency,
-        }).format(amount);
-    };
+const Header: React.FC<HeaderProps> = ({ onLogout, onOpenModal }) => {
+  const { theme, toggleTheme } = useTheme();
 
-    return (
-        <header className="bg-surface sticky top-0 z-30 shadow-md">
-            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                <div>
-                    <h1 className="text-xl font-bold text-primary">FinTrack</h1>
-                    <p className="text-sm text-text-secondary font-medium">{formatCurrency(balance)}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <button 
-                        onClick={() => setActiveModal('addTransaction')}
-                        className="p-2 text-text-secondary hover:text-primary transition-colors rounded-full"
-                        aria-label="Add Transaction"
-                    >
-                        <PlusCircleIcon className="h-7 w-7" />
-                    </button>
-                    <button 
-                        onClick={() => setActiveModal('settings')}
-                        className="p-2 text-text-secondary hover:text-primary transition-colors rounded-full"
-                        aria-label="Settings"
-                    >
-                        <SettingsIcon className="h-6 w-6" />
-                    </button>
-                </div>
-            </div>
-        </header>
-    );
+  return (
+    <header className="bg-surface sticky top-0 z-10 p-4 flex justify-between items-center border-b border-gray-700">
+      <div className="flex items-center gap-3">
+        <svg
+          className="w-8 h-8 text-primary"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v4h-2v-4zm0 6h2v2h-2v-2z" />
+        </svg>
+        <h1 className="text-xl font-bold text-text-primary hidden sm:block">Finance Tracker</h1>
+      </div>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+        <button
+          onClick={() => onOpenModal('settings')}
+          className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+          aria-label="Settings"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+        <button
+          onClick={onLogout}
+          className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+          aria-label="Logout"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
+      </div>
+    </header>
+  );
 };
 
 export default Header;

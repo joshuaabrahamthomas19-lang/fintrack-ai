@@ -1,11 +1,26 @@
 export interface Transaction {
   id: string;
-  date: string; // ISO 8601 format
-  merchant: string;
+  date: string; // YYYY-MM-DD
+  description: string;
   amount: number;
-  type: 'income' | 'expense';
   category: string;
-  notes?: string;
+  type: 'income' | 'expense';
+}
+
+export interface Budget {
+  id: string;
+  category: string;
+  amount: number;
+  spent: number;
+  remaining: number;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: string;
 }
 
 export interface Category {
@@ -14,89 +29,38 @@ export interface Category {
   type: 'income' | 'expense';
 }
 
-export interface Budget {
-  id: string;
-  categoryId: string;
-  limit: number;
-  spent: number;
-  startDate: string; // ISO 8601 format
-  endDate: string; // ISO 8601 format
+export interface Savings {
+    id: string;
+    name: string;
+    amount: number;
 }
 
-export interface Goal {
-  id: string;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline?: string; // ISO 8601 format
+export interface AppData {
+  transactions: Transaction[];
+  budgets: Budget[];
+  goals: Goal[];
+  categories: Category[];
+  savings: Savings[];
+  balance: number;
 }
 
-export interface Settings {
-    theme: 'light' | 'dark';
-    currency: 'USD' | 'EUR' | 'GBP' | 'JPY';
-}
+export type AppDataKey = keyof AppData;
 
-export type ToastMessage = {
-  id: number;
-  message: string;
-  type: 'success' | 'error' | 'info';
-};
-
-export type ActiveModal = 
+export type ModalType = 
   | 'addTransaction' 
   | 'editTransaction'
   | 'editBalance'
-  | 'budget'
-  | 'goal'
-  | 'savings'
+  | 'budget' 
   | 'category'
-  | 'settings'
+  | 'goal'
   | 'fundGoal'
+  | 'savings'
+  | 'settings'
   | 'confirmDelete'
-  | 'upload'
   | null;
 
-export interface AppContextType {
-  // State
-  transactions: Transaction[];
-  categories: Category[];
-  budgets: Budget[];
-  goals: Goal[];
-  balance: number;
-  settings: Settings;
-  toasts: ToastMessage[];
-  isLoading: boolean;
-  activeModal: ActiveModal;
-  
-  // State Setters
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
-  updateTransaction: (transaction: Transaction) => Promise<void>;
-  deleteTransaction: (id: string) => Promise<void>;
-
-  addCategory: (category: Omit<Category, 'id'>) => void;
-  
-  setBalance: (balance: number) => void;
-
-  setSettings: (settings: Settings) => void;
-  
-  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  removeToast: (id: number) => void;
-
-  setLoading: (loading: boolean) => void;
-  
-  setActiveModal: (modal: ActiveModal) => void;
-  
-  // Derived state/helpers
-  getCategoryName: (id: string) => string;
-
-  // Goals
-  addGoal: (goal: Omit<Goal, 'id' | 'currentAmount'>) => void;
-  updateGoal: (goal: Goal) => void;
-  deleteGoal: (id: string) => void;
-  fundGoal: (id: string, amount: number) => void;
-
-  // Budgets
-  addBudget: (budget: Omit<Budget, 'id' | 'spent'>) => void;
-  updateBudget: (budget: Budget) => void;
-  deleteBudget: (id: string) => void;
+export interface Notification {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
 }

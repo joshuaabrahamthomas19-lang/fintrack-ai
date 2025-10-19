@@ -1,74 +1,134 @@
 import React, { useState, useEffect } from 'react';
-// FIX: Using relative paths to fix module resolution issues.
 import Modal from './Modal';
-import { useApp } from './ThemeContext';
-import { Transaction } from '../types';
+import { Category, Transaction } from '@/types';
+import * as api from '@/services/apiService';
 
 interface EditTransactionModalProps {
-    onClose: () => void;
-    transaction: Transaction;
+  transaction: Transaction;
+  onClose: () => void;
+  onSuccess: () => void;
+  categories: Category[];
 }
 
-const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ onClose, transaction }) => {
-    const { updateTransaction, categories } = useApp();
-    const [merchant, setMerchant] = useState('');
-    const [amount, setAmount] = useState('');
-    const [date, setDate] = useState('');
-    const [category, setCategory] = useState('');
+const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction, onClose, onSuccess, categories }) => {
+  const [type, setType] = useState<'income' | 'expense'>(transaction.type);
+  const [description, setDescription] = useState(transaction.description);
+  const [amount, setAmount] = useState(String(transaction.amount));
+  const [date, setDate] = useState(transaction.date);
+  const [category, setCategory] = useState(transaction.category);
+  const [error, setError] = useState('');
 
-    useEffect(() => {
-        if (transaction) {
-            setMerchant(transaction.merchant);
-            setAmount(String(transaction.amount));
-            setDate(transaction.date.split('T')[0]);
-            setCategory(transaction.category);
-        }
-    }, [transaction]);
+  const availableCategories = categories.filter(c => c.type === type);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+  useEffect(() => {
+    // If the transaction's category is not in the available categories for the current type, reset it.
+    if (!availableCategories.some(c => c.name === category)) {
+      setCategory('');
+    }
+  }, [type, availableCategories, category]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description || !amount || !date || !category || parseFloat(amount) <= 0) {
+      setError('Please fill out all fields with valid values.');
+      return;
+    }
+    setError('');
+
+    try {
+      await api.updateTransaction({
+        ...transaction,
+        date,
+        description,
+        amount: parseFloat(amount),
+        category,
+        type,
+      });
+      onSuccess();
+    } catch (err) {
+      setError('Failed to update transaction.');
+    }
+  };
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Edit Transaction">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`flex-1 py-2 rounded-md ${type === 'expense' ? 'bg-danger text-white' : 'bg-gray-600'}`}
+            >
+              Expense
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`flex-1 py-2 rounded-md ${type === 'income' ? 'bg-green-600 text-white' : 'bg-gray-600'}`}
+            >
+              Income
+            </button>
+          </div>
+        </div>
         
-        const updatedTransaction: Transaction = {
-            ...transaction,
-            merchant,
-            amount: parseFloat(amount),
-            date,
-            category,
-        };
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-text-secondary mb-1">Description</label>
+          <input
+            type="text"
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
 
-        await updateTransaction(updatedTransaction);
-        onClose();
-    };
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium text-text-secondary mb-1">Amount</label>
+            <input
+              type="number"
+              id="amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label htmlFor="date" className="block text-sm font-medium text-text-secondary mb-1">Date</label>
+            <input
+              type="date"
+              id="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
 
-    return (
-        <Modal onClose={onClose} title="Edit Transaction">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                 <div>
-                    <label htmlFor="merchant" className="block text-sm font-medium text-text-secondary">Merchant</label>
-                    <input type="text" id="merchant" value={merchant} onChange={(e) => setMerchant(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required />
-                </div>
-                <div>
-                    <label htmlFor="amount" className="block text-sm font-medium text-text-secondary">Amount</label>
-                    <input type="number" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required />
-                </div>
-                <div>
-                    <label htmlFor="date" className="block text-sm font-medium text-text-secondary">Date</label>
-                    <input type="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required />
-                </div>
-                <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-text-secondary">Category</label>
-                    <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required>
-                        <option value="">Select a category</option>
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                </div>
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
-                    <button type="submit" className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors">Save Changes</button>
-                </div>
-            </form>
-        </Modal>
-    );
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium text-text-secondary mb-1">Category</label>
+          <select
+            id="category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Select a category</option>
+            {availableCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+        
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <div className="flex justify-end gap-3 pt-4">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
+          <button type="submit" className="px-4 py-2 rounded-md bg-primary hover:bg-primary-dark transition-colors">Save Changes</button>
+        </div>
+      </form>
+    </Modal>
+  );
 };
 
 export default EditTransactionModal;

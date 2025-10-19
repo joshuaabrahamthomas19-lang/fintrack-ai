@@ -1,48 +1,46 @@
 import React from 'react';
-// FIX: Using relative paths to fix module resolution issues.
 import Modal from './Modal';
-import { useApp } from './ThemeContext';
+import { useTheme } from './ThemeContext';
 
 interface SettingsModalProps {
-    onClose: () => void;
+  onClose: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
-    const { settings, setSettings } = useApp();
+    const { theme, toggleTheme } = useTheme();
 
-    const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSettings({ ...settings, theme: e.target.value as 'light' | 'dark' });
-    };
+    const handleClearData = () => {
+        if(window.confirm('Are you sure you want to delete all your data? This action cannot be undone.')) {
+            localStorage.clear();
+            window.location.reload();
+        }
+    }
 
-    const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSettings({ ...settings, currency: e.target.value as 'USD' | 'EUR' | 'GBP' | 'JPY' });
-    };
-
-    return (
-        <Modal onClose={onClose} title="Settings">
-            <div className="space-y-4">
-                <div>
-                    <label htmlFor="theme" className="block text-sm font-medium text-text-secondary">Theme</label>
-                    <select id="theme" value={settings.theme} onChange={handleThemeChange} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary">
-                        <option value="dark">Dark</option>
-                        <option value="light">Light (Not implemented)</option>
-                    </select>
-                </div>
-                 <div>
-                    <label htmlFor="currency" className="block text-sm font-medium text-text-secondary">Currency</label>
-                    <select id="currency" value={settings.currency} onChange={handleCurrencyChange} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary">
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                        <option value="JPY">JPY</option>
-                    </select>
-                </div>
-                 <div className="mt-6 flex justify-end">
-                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Done</button>
-                </div>
-            </div>
-        </Modal>
-    );
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Settings">
+      <div className="space-y-6 text-text-secondary">
+        <div>
+          <h3 className="text-lg font-medium text-text-primary mb-2">Appearance</h3>
+          <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+            <span>Theme</span>
+            <button onClick={toggleTheme} className="px-3 py-1 rounded-md text-sm bg-primary text-white">
+              Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-medium text-text-primary mb-2">Data Management</h3>
+           <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+            <span>Clear All Data</span>
+            <button onClick={handleClearData} className="px-3 py-1 rounded-md text-sm bg-danger text-white">
+                Clear Data
+            </button>
+          </div>
+          <p className="text-xs text-text-muted mt-2">This will delete all transactions, budgets, goals, and reset your balance. Use with caution.</p>
+        </div>
+      </div>
+    </Modal>
+  );
 };
 
 export default SettingsModal;

@@ -1,36 +1,26 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-// FIX: Using relative paths to fix module resolution issues.
-import { Transaction, Category } from '../types';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
-export const pdfService = {
-  generateTransactionsReport(transactions: Transaction[], categories: Category[]) {
-    const doc = new jsPDF();
-    
-    const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'N/A';
+// FIX: Set workerSrc to a reliable CDN to avoid build configuration issues.
+// For a production app, it's better to host this worker file yourself.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-    doc.text("Transactions Report", 14, 16);
-    
-    const tableColumn = ["Date", "Merchant", "Category", "Type", "Amount"];
-    const tableRows: (string | number)[][] = [];
+export const getTextFromPdf = async (file: File): Promise<string> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const numPages = pdf.numPages;
+  let fullText = '';
 
-    transactions.forEach(t => {
-      const transactionData = [
-        new Date(t.date).toLocaleDateString(),
-        t.merchant,
-        getCategoryName(t.category),
-        t.type,
-        t.amount.toFixed(2)
-      ];
-      tableRows.push(transactionData);
-    });
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
-    });
-    
-    doc.save("transactions-report.pdf");
+  for (let i = 1; i <= numPages; i++) {
+    try {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      // 'str' is a property on TextItem type from pdfjs-dist
+      const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+      fullText += pageText + '\n';
+    } catch (error) {
+        console.error(`Error processing page ${i}:`, error);
+    }
   }
+
+  return fullText;
 };
