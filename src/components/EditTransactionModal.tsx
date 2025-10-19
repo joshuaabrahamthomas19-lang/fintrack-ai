@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Modal from '@/components/Modal';
-import { useApp } from '@/components/ThemeContext';
-import { Transaction } from '@/types';
+// FIX: Using relative paths to fix module resolution issues.
+import Modal from './Modal';
+import { useApp } from './ThemeContext';
+import { Transaction } from '../types';
 
 interface EditTransactionModalProps {
     onClose: () => void;

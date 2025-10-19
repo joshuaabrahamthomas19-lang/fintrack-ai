@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { apiService } from '@/services/apiService';
-import { useApp } from '@/components/ThemeContext';
-import { UploadCloudIcon } from '@/components/icons';
+// FIX: Using relative paths to fix module resolution issues.
+import { apiService } from '../services/apiService';
+import { useApp } from './ThemeContext';
+import { UploadCloudIcon } from './icons';
 
 interface FileUploaderProps {
     onClose: () => void;

@@ -1,6 +1,7 @@
 import React from 'react';
-import { ToastMessage } from '@/types';
-import { CheckCircleIcon, XIcon, InfoIcon, AlertTriangleIcon } from '@/components/icons';
+// FIX: Using relative paths to fix module resolution issues.
+import { ToastMessage } from '../types';
+import { CheckCircleIcon, XIcon, InfoIcon, AlertTriangleIcon } from './icons';
 
 interface NotificationBannerProps {
     toasts: ToastMessage[];

@@ -1,5 +1,6 @@
 import React from 'react';
-import Modal from '@/components/Modal';
+// FIX: Using relative paths to fix module resolution issues.
+import Modal from './Modal';
 
 interface SavingsModalProps {
     onClose: () => void;

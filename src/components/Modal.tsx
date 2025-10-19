@@ -1,5 +1,6 @@
 import React from 'react';
-import { XIcon } from '@/components/icons';
+// FIX: Using relative paths to fix module resolution issues.
+import { XIcon } from './icons';
 
 interface ModalProps {
     onClose: () => void;

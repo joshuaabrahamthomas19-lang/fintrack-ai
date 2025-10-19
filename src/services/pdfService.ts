@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { Transaction, Category } from '@/types';
+// FIX: Using relative paths to fix module resolution issues.
+import { Transaction, Category } from '../types';
 
 export const pdfService = {
   generateTransactionsReport(transactions: Transaction[], categories: Category[]) {

@@ -1,7 +1,8 @@
 import React from 'react';
-import Modal from '@/components/Modal';
-import type { Transaction } from '@/types';
-import { WarningIcon } from '@/components/icons';
+// FIX: Using relative paths to fix module resolution issues.
+import Modal from './Modal';
+import type { Transaction } from '../types';
+import { WarningIcon } from './icons';
 
 interface ConfirmDeleteModalProps {
     transaction: Transaction;

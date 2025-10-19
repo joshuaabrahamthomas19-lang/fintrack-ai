@@ -1,6 +1,7 @@
 import React from 'react';
-import { DashboardIcon, ReportsIcon, PlusCircleIcon, UploadCloudIcon } from '@/components/icons';
-import { useApp } from '@/components/ThemeContext';
+// FIX: Using relative paths to fix module resolution issues.
+import { DashboardIcon, ReportsIcon, PlusCircleIcon, UploadCloudIcon } from './icons';
+import { useApp } from './ThemeContext';
 
 interface BottomNavProps {
     activeTab: string;

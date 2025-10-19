@@ -1,6 +1,7 @@
 import React from 'react';
-import { useApp } from '@/components/ThemeContext';
-import { PlusCircleIcon, SettingsIcon } from '@/components/icons';
+// FIX: Using relative paths to fix module resolution issues.
+import { useApp } from './ThemeContext';
+import { PlusCircleIcon, SettingsIcon } from './icons';
 
 const Header: React.FC = () => {
     const { balance, settings, setActiveModal } = useApp();

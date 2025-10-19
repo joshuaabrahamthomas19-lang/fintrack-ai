@@ -1,7 +1,8 @@
 import React from 'react';
-import { useApp } from '@/components/ThemeContext';
-import TransactionList from '@/components/TransactionList';
-import { Transaction } from '@/types';
+// FIX: Using relative paths to fix module resolution issues.
+import { useApp } from './ThemeContext';
+import TransactionList from './TransactionList';
+import { Transaction } from '../types';
 
 interface DashboardProps {
     openModal: (modal: string, data?: any) => void;

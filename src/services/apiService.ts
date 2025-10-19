@@ -1,4 +1,5 @@
-import { Transaction } from '@/types';
+// FIX: Using relative paths to fix module resolution issues.
+import { Transaction } from '../types';
 
 const API_BASE_URL = 'http://localhost:3001/api'; // Assuming a local backend server
 

@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
-import { useApp } from '@/components/ThemeContext';
-import Header from '@/components/Header';
-import Dashboard from '@/components/Dashboard';
-import Reports from '@/components/Reports';
-import LoadingOverlay from '@/components/LoadingOverlay';
-import AddTransactionModal from '@/components/AddTransactionModal';
-import EditTransactionModal from '@/components/EditTransactionModal';
-import NotificationBanner from '@/components/NotificationBanner';
-import BottomNav from '@/components/BottomNav';
-import BudgetModal from '@/components/BudgetModal';
-import GoalModal from '@/components/GoalModal';
-import SavingsModal from '@/components/SavingsModal';
-import CategoryModal from '@/components/CategoryModal';
-import SettingsModal from '@/components/SettingsModal';
-import FundGoalModal from '@/components/FundGoalModal';
-import EditBalanceModal from '@/components/EditBalanceModal';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
-import FileUploader from '@/components/FileUploader';
+// FIX: Using relative paths to fix module resolution issues.
+import { useApp } from './components/ThemeContext';
+import Header from './components/Header';
+import Dashboard from './components/Dashboard';
+import Reports from './components/Reports';
+import LoadingOverlay from './components/LoadingOverlay';
+import AddTransactionModal from './components/AddTransactionModal';
+import EditTransactionModal from './components/EditTransactionModal';
+import NotificationBanner from './components/NotificationBanner';
+import BottomNav from './components/BottomNav';
+import BudgetModal from './components/BudgetModal';
+import GoalModal from './components/GoalModal';
+import SavingsModal from './components/SavingsModal';
+import CategoryModal from './components/CategoryModal';
+import SettingsModal from './components/SettingsModal';
+import FundGoalModal from './components/FundGoalModal';
+import EditBalanceModal from './components/EditBalanceModal';
+import ConfirmDeleteModal from './components/ConfirmDeleteModal';
+import FileUploader from './components/FileUploader';
 import { Transaction } from './types';
 
 

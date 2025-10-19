@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import Modal from '@/components/Modal';
-import { useApp } from '@/components/ThemeContext';
+// FIX: Using relative paths to fix module resolution issues.
+import Modal from './Modal';
+import { useApp } from './ThemeContext';
 
 interface FundGoalModalProps {
     onClose: () => void;

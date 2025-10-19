@@ -1,5 +1,6 @@
 import React from 'react';
-import { useApp } from '@/components/ThemeContext';
+// FIX: Using relative paths to fix module resolution issues.
+import { useApp } from './ThemeContext';
 import DoughnutChart from './charts/DoughnutChart';
 
 const Reports: React.FC = () => {
@@ -7,11 +8,12 @@ const Reports: React.FC = () => {
 
     const expenseByCategory = transactions
         .filter(t => t.type === 'expense')
-        .reduce((acc, t) => {
+        // FIX: Explicitly type the accumulator to ensure correct type inference for Object.values.
+        .reduce((acc: Record<string, number>, t) => {
             const categoryName = categories.find(c => c.id === t.category)?.name || 'Uncategorized';
             acc[categoryName] = (acc[categoryName] || 0) + t.amount;
             return acc;
-        }, {} as Record<string, number>);
+        }, {});
 
     const chartData = {
         labels: Object.keys(expenseByCategory),

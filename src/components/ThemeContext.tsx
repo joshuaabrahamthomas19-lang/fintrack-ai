@@ -1,7 +1,8 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { Transaction, Category, Budget, Goal, Settings, ToastMessage, ActiveModal, AppContextType } from '@/types';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { apiService } from '@/services/apiService';
+// FIX: Using relative paths to fix module resolution issues.
+import { Transaction, Category, Budget, Goal, Settings, ToastMessage, ActiveModal, AppContextType } from '../types';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { apiService } from '../services/apiService';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 

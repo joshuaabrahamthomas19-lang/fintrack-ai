@@ -1,7 +1,8 @@
 import React from 'react';
-import type { Transaction } from '@/types';
-import { useApp } from '@/components/ThemeContext';
-import { EditIcon, TrashIcon } from '@/components/icons';
+// FIX: Using relative paths to fix module resolution issues.
+import type { Transaction } from '../types';
+import { useApp } from './ThemeContext';
+import { EditIcon, TrashIcon } from './icons';
 
 interface TransactionListProps {
     transactions: Transaction[];
