@@ -1,64 +1,21 @@
-import React, { useState } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from '@/components/Modal';
-import type { Budget } from '@/types';
+import React from 'react';
+import Modal from '@/components/Modal';
 
 interface BudgetModalProps {
-    currentBudget: Budget;
-    currency: string;
-    onSave: (newBudget: Budget) => void;
     onClose: () => void;
 }
 
-const BudgetModal: React.FC<BudgetModalProps> = ({ currentBudget, currency, onSave, onClose }) => {
-    const [type, setType] = useState(currentBudget.type);
-    const [limit, setLimit] = useState(currentBudget.limit);
-
-    const handleSave = () => {
-        if (limit > 0) {
-            onSave({ type, limit });
-        }
-        onClose();
-    };
-    
+const BudgetModal: React.FC<BudgetModalProps> = ({ onClose }) => {
     return (
-        <Modal onClose={onClose} title="Set Budget">
-            <div className="space-y-4">
-                <div>
-                    <ModalLabel>Budget Period</ModalLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                        <button 
-                            onClick={() => setType('daily')} 
-                            className={`py-2 rounded-md font-semibold transition-colors ${type === 'daily' ? 'bg-primary text-white' : 'bg-background hover:bg-slate-700'}`}
-                        >
-                            Daily
-                        </button>
-                        <button 
-                            onClick={() => setType('monthly')} 
-                            className={`py-2 rounded-md font-semibold transition-colors ${type === 'monthly' ? 'bg-primary text-white' : 'bg-background hover:bg-slate-700'}`}
-                        >
-                            Monthly
-                        </button>
-                    </div>
+        <Modal onClose={onClose} title="Manage Budget">
+            <form>
+                {/* Form fields for budget management would go here */}
+                <p className="text-text-secondary">Budget management feature coming soon.</p>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
+                    <button type="submit" className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50" disabled>Save</button>
                 </div>
-
-                <div>
-                    <ModalLabel htmlFor="budgetLimit">
-                        {type === 'daily' ? `Daily Spending Limit (${currency})` : `Monthly Spending Limit (${currency})`}
-                    </ModalLabel>
-                    <ModalInput
-                        id="budgetLimit"
-                        type="number"
-                        value={limit}
-                        onChange={(e) => setLimit(Number(e.target.value))}
-                        placeholder={type === 'daily' ? "e.g., 500" : "e.g., 15000"}
-                    />
-                </div>
-            </div>
-            <div className="mt-6">
-                <ModalButton onClick={handleSave} disabled={limit <= 0}>
-                    Save Budget
-                </ModalButton>
-            </div>
+            </form>
         </Modal>
     );
 };

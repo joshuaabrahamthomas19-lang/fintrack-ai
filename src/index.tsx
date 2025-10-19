@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-// FIX: Using relative path for sibling component.
-import App from './App';
+// FIX: Using absolute path with alias for consistency.
+import App from '@/App';
 import { AppProvider } from '@/components/ThemeContext';
 import '@/index.css';
 

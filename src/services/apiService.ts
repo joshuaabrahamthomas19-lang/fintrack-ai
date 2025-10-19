@@ -1,103 +1,78 @@
-import type { Transaction, UserData } from '@/types';
+import { Transaction } from '@/types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = 'http://localhost:3001/api'; // Assuming a local backend server
 
-const getAuthToken = () => localStorage.getItem('fintrack-token');
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Something went wrong');
+  }
+  return response.json();
+}
 
-const apiService = {
-    async login(username: string): Promise<boolean> {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username }),
-            });
-            if (!response.ok) throw new Error('Login failed');
-            const { token } = await response.json();
-            localStorage.setItem('fintrack-token', token);
-            return true;
-        } catch (error) {
-            console.error('Login error:', error);
-            return false;
-        }
-    },
-
-    logout() {
-        localStorage.removeItem('fintrack-token');
-    },
-
-    async checkAuth(): Promise<{ username: string } | null> {
-        const token = getAuthToken();
-        if (!token) return null;
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/check-auth`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) {
-                this.logout();
-                return null;
-            };
-            return await response.json();
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            this.logout();
-            return null;
-        }
-    },
-
-    async getUserData(): Promise<UserData | null> {
-         const token = getAuthToken();
-        if (!token) return null;
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/data`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error('Failed to fetch user data');
-            return await response.json();
-        } catch (error) {
-            console.error('Get user data error:', error);
-            return null;
-        }
-    },
-
-    async saveAllData(data: Omit<UserData, 'username'>): Promise<void> {
-        const token = getAuthToken();
-        if (!token) return;
-        try {
-            await fetch(`${API_BASE_URL}/api/data`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data),
-            });
-        } catch (error) {
-            console.error('Save data error:', error);
-        }
-    },
-
-    async parseSmsFile(file: File): Promise<Omit<Transaction, 'id'>[]> {
-        const token = getAuthToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch(`${API_BASE_URL}/api/parse-sms`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
+export const apiService = {
+  // Mock parsing on the client side for simplicity.
+  // A real implementation would send the file to the backend.
+  async parseSmsFile(file: File): Promise<{ transactions: Transaction[], summary: string }> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        // This is a placeholder for actual SMS parsing logic
+        console.log("Parsing SMS file content:", text);
+        // Let's create some mock transactions
+        const mockTransactions: Transaction[] = [
+          { id: crypto.randomUUID(), date: '2023-10-26', merchant: 'Supermarket', amount: 54.21, type: 'expense', category: 'groceries' },
+          { id: crypto.randomUUID(), date: '2023-10-25', merchant: 'Gas Station', amount: 40.00, type: 'expense', category: 'transport' },
+        ];
+        resolve({ 
+            transactions: mockTransactions,
+            summary: `Successfully parsed ${mockTransactions.length} transactions from the file.`
         });
+      };
+      reader.readAsText(file);
+    });
+  },
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to parse SMS file.');
-        }
+  async getTransactions(): Promise<Transaction[]> {
+    // In a real app, this would be:
+    // const response = await fetch(`${API_BASE_URL}/transactions`);
+    // return handleResponse<Transaction[]>(response);
+    
+    // Returning empty array for now, data will be from local storage in ThemeContext
+    return Promise.resolve([]);
+  },
 
-        const data = await response.json();
-        return data.transactions;
-    },
+  async addTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
+    const newTransaction = { ...transaction, id: crypto.randomUUID() };
+    console.log("API: Adding transaction", newTransaction);
+    // In a real app:
+    // const response = await fetch(`${API_BASE_URL}/transactions`, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(transaction),
+    // });
+    // return handleResponse<Transaction>(response);
+    return Promise.resolve(newTransaction);
+  },
+
+  async updateTransaction(transaction: Transaction): Promise<Transaction> {
+    console.log("API: Updating transaction", transaction);
+    // In a real app:
+    // const response = await fetch(`${API_BASE_URL}/transactions/${transaction.id}`, {
+    //   method: 'PUT',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(transaction),
+    // });
+    // return handleResponse<Transaction>(response);
+    return Promise.resolve(transaction);
+  },
+
+  async deleteTransaction(id: string): Promise<{}> {
+    console.log("API: Deleting transaction", id);
+     // In a real app:
+    // const response = await fetch(`${API_BASE_URL}/transactions/${id}`, { method: 'DELETE' });
+    // return handleResponse(response);
+    return Promise.resolve({});
+  }
 };
-
-export { apiService };

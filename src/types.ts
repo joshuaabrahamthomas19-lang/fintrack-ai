@@ -1,12 +1,26 @@
 export interface Transaction {
   id: string;
-  type: 'debit' | 'credit';
-  amount: number;
+  date: string; // ISO 8601 format
   merchant: string;
-  description: string;
-  date: string; // YYYY-MM-DD
+  amount: number;
+  type: 'income' | 'expense';
   category: string;
-  excludeFromBudget?: boolean;
+  notes?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+}
+
+export interface Budget {
+  id: string;
+  categoryId: string;
+  limit: number;
+  spent: number;
+  startDate: string; // ISO 8601 format
+  endDate: string; // ISO 8601 format
 }
 
 export interface Goal {
@@ -14,54 +28,75 @@ export interface Goal {
   name: string;
   targetAmount: number;
   currentAmount: number;
+  deadline?: string; // ISO 8601 format
 }
 
-export interface Budget {
-  type: 'daily' | 'monthly';
-  limit: number;
+export interface Settings {
+    theme: 'light' | 'dark';
+    currency: 'USD' | 'EUR' | 'GBP' | 'JPY';
 }
 
-export type View = 'dashboard' | 'reports' | 'transactions';
+export type ToastMessage = {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+};
 
-export interface FilterState {
-    searchTerm: string;
-    category: string;
-    type: 'all' | 'debit' | 'credit';
-    startDate: string;
-    endDate: string;
-    excludeBudgedExempt: boolean;
-}
+export type ActiveModal = 
+  | 'addTransaction' 
+  | 'editTransaction'
+  | 'editBalance'
+  | 'budget'
+  | 'goal'
+  | 'savings'
+  | 'category'
+  | 'settings'
+  | 'fundGoal'
+  | 'confirmDelete'
+  | 'upload'
+  | null;
 
-export interface UserData {
-    username: string;
-    transactions: Transaction[];
-    goals: Goal[];
-    budget: Budget;
-    savings: number;
-    totalBalance: number;
-    currency: string;
-    categories: string[];
-}
+export interface AppContextType {
+  // State
+  transactions: Transaction[];
+  categories: Category[];
+  budgets: Budget[];
+  goals: Goal[];
+  balance: number;
+  settings: Settings;
+  toasts: ToastMessage[];
+  isLoading: boolean;
+  activeModal: ActiveModal;
+  
+  // State Setters
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  updateTransaction: (transaction: Transaction) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
 
-// --- New Modal State Types for better management ---
-type ModalType = 
-    | 'addTransaction' 
-    | 'editTransaction' 
-    | 'budget' 
-    | 'goal' 
-    | 'savings' 
-    | 'fundGoal' 
-    | 'editBalance' 
-    | 'settings' 
-    | 'categories'
-    | 'confirmDelete';
+  addCategory: (category: Omit<Category, 'id'>) => void;
+  
+  setBalance: (balance: number) => void;
 
-interface ModalProps {
-    transaction?: Transaction;
-    goal?: Goal;
-}
+  setSettings: (settings: Settings) => void;
+  
+  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  removeToast: (id: number) => void;
 
-export interface ModalState {
-    type: ModalType | null;
-    props: ModalProps;
+  setLoading: (loading: boolean) => void;
+  
+  setActiveModal: (modal: ActiveModal) => void;
+  
+  // Derived state/helpers
+  getCategoryName: (id: string) => string;
+
+  // Goals
+  addGoal: (goal: Omit<Goal, 'id' | 'currentAmount'>) => void;
+  updateGoal: (goal: Goal) => void;
+  deleteGoal: (id: string) => void;
+  fundGoal: (id: string, amount: number) => void;
+
+  // Budgets
+  addBudget: (budget: Omit<Budget, 'id' | 'spent'>) => void;
+  updateBudget: (budget: Budget) => void;
+  deleteBudget: (id: string) => void;
 }

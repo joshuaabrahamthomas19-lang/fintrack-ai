@@ -1,39 +1,21 @@
-import React, { useState } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
+import React from 'react';
+import Modal from '@/components/Modal';
 
 interface SavingsModalProps {
-    currency: string;
-    onSave: (amount: number) => void;
     onClose: () => void;
 }
 
-const SavingsModal: React.FC<SavingsModalProps> = ({ currency, onSave, onClose }) => {
-    const [amount, setAmount] = useState<number | ''>('');
-
-    const handleSave = () => {
-        if (Number(amount) > 0) {
-            onSave(Number(amount));
-            onClose();
-        }
-    };
-
+const SavingsModal: React.FC<SavingsModalProps> = ({ onClose }) => {
     return (
-        <Modal onClose={onClose} title="Add to Savings">
-            <div>
-                <ModalLabel htmlFor="savingsAmount">Amount to Add ({currency})</ModalLabel>
-                <ModalInput
-                    id="savingsAmount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
-                    placeholder="e.g., 100"
-                />
-            </div>
-            <div className="mt-6">
-                <ModalButton onClick={handleSave} disabled={!amount || Number(amount) <= 0}>
-                    Add to Savings
-                </ModalButton>
-            </div>
+        <Modal onClose={onClose} title="Manage Savings">
+            <form>
+                {/* Form fields for savings management would go here */}
+                <p className="text-text-secondary">Savings management feature coming soon.</p>
+                 <div className="mt-6 flex justify-end space-x-3">
+                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
+                    <button type="submit" className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50" disabled>Save</button>
+                </div>
+            </form>
         </Modal>
     );
 };

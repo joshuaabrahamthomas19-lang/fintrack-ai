@@ -1,107 +1,66 @@
 import React, { useState } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from '@/components/Modal';
-import type { Transaction, UserData } from '@/types';
+import Modal from '@/components/Modal';
+import { useApp } from '@/components/ThemeContext';
+import { Transaction } from '@/types';
 
 interface AddTransactionModalProps {
-    userData: UserData;
-    updateUserData: (updates: Partial<UserData>) => void;
     onClose: () => void;
 }
 
-const getInitialState = () => ({
-    type: 'debit' as 'debit' | 'credit',
-    amount: '' as number | '',
-    merchant: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-    category: '',
-    excludeFromBudget: false,
-});
+const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClose }) => {
+    const { addTransaction, categories } = useApp();
+    const [type, setType] = useState<'expense' | 'income'>('expense');
+    const [merchant, setMerchant] = useState('');
+    const [amount, setAmount] = useState('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [category, setCategory] = useState('');
 
-const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ userData, updateUserData, onClose }) => {
-    const [formState, setFormState] = useState(getInitialState());
-
-    const handleChange = (field: keyof typeof formState, value: any) => {
-        setFormState(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleSave = () => {
-        const numericAmount = Number(formState.amount);
-        if (numericAmount > 0 && formState.date) {
-            const newTransaction: Transaction = {
-                id: `tx_${Date.now()}`,
-                type: formState.type,
-                amount: numericAmount,
-                merchant: formState.merchant.trim(),
-                description: formState.description.trim(),
-                date: formState.date,
-                category: formState.category.trim() || 'Uncategorized',
-                excludeFromBudget: formState.type === 'debit' ? formState.excludeFromBudget : false,
-            };
-
-            const newCategories = [...userData.categories];
-            if (newTransaction.category && !newCategories.find(c => c.toLowerCase() === newTransaction.category.toLowerCase())) {
-                newCategories.push(newTransaction.category);
-                newCategories.sort();
-            }
-            
-            const balanceChange = formState.type === 'credit' ? numericAmount : -numericAmount;
-
-            updateUserData({
-                transactions: [newTransaction, ...userData.transactions],
-                totalBalance: userData.totalBalance + balanceChange,
-                categories: newCategories,
-            });
-            setFormState(getInitialState()); // Reset form state
-            onClose();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!merchant || !amount || !date || !category) {
+            // Basic validation
+            return;
         }
+        
+        const newTransaction: Omit<Transaction, 'id'> = {
+            merchant,
+            amount: parseFloat(amount),
+            date,
+            type,
+            category,
+        };
+
+        await addTransaction(newTransaction);
+        onClose();
     };
 
     return (
-        <Modal onClose={onClose} title="Add New Transaction">
-            <div className="space-y-4">
-                <div>
-                    <ModalLabel>Transaction Type</ModalLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => handleChange('type', 'debit')} className={`py-2 rounded-md font-semibold ${formState.type === 'debit' ? 'bg-danger/80 text-white' : 'bg-background hover:bg-slate-700'}`}>Debit</button>
-                        <button onClick={() => handleChange('type', 'credit')} className={`py-2 rounded-md font-semibold ${formState.type === 'credit' ? 'bg-primary/80 text-white' : 'bg-background hover:bg-slate-700'}`}>Credit</button>
-                    </div>
-                </div>
-                <div>
-                    <ModalLabel htmlFor="amount">Amount ({userData.currency})</ModalLabel>
-                    <ModalInput id="amount" type="number" value={formState.amount} onChange={(e) => handleChange('amount', e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 42.50" />
-                </div>
+        <Modal onClose={onClose} title="Add Transaction">
+            <form onSubmit={handleSubmit} className="space-y-4">
                  <div>
-                    <ModalLabel htmlFor="merchant">Merchant / Source</ModalLabel>
-                    <ModalInput id="merchant" type="text" value={formState.merchant} onChange={(e) => handleChange('merchant', e.target.value)} placeholder="e.g., Coffee Shop" />
+                    <label htmlFor="merchant" className="block text-sm font-medium text-text-secondary">Merchant</label>
+                    <input type="text" id="merchant" value={merchant} onChange={(e) => setMerchant(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required />
                 </div>
                 <div>
-                    <ModalLabel htmlFor="category">Category</ModalLabel>
-                    <ModalInput id="category" type="text" value={formState.category} onChange={(e) => handleChange('category', e.target.value)} placeholder="e.g., Food, Transport..." list="category-options"/>
-                    <datalist id="category-options">
-                        {userData.categories.map(cat => <option key={cat} value={cat} />)}
-                    </datalist>
-                </div>
-                 <div>
-                    <ModalLabel htmlFor="description">Description (Optional)</ModalLabel>
-                    <ModalInput id="description" type="text" value={formState.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="e.g., Morning Latte" />
+                    <label htmlFor="amount" className="block text-sm font-medium text-text-secondary">Amount</label>
+                    <input type="number" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required />
                 </div>
                 <div>
-                    <ModalLabel htmlFor="date">Date</ModalLabel>
-                    <ModalInput id="date" type="date" value={formState.date} onChange={(e) => handleChange('date', e.target.value)} />
+                    <label htmlFor="date" className="block text-sm font-medium text-text-secondary">Date</label>
+                    <input type="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required />
                 </div>
-                {formState.type === 'debit' && (
-                    <label className="flex items-center space-x-3 pt-2 text-sm font-medium text-text-secondary">
-                        <input id="excludeFromBudget" type="checkbox" checked={formState.excludeFromBudget} onChange={(e) => handleChange('excludeFromBudget', e.target.checked)} className="h-4 w-4 rounded border-slate-600 bg-background text-primary focus:ring-primary focus:ring-offset-surface"/>
-                        <span>Exclude this from budget</span>
-                    </label>
-                )}
-            </div>
-            <div className="mt-6">
-                <ModalButton onClick={handleSave} disabled={!formState.amount || Number(formState.amount) <= 0}>
-                    Save Transaction
-                </ModalButton>
-            </div>
+                <div>
+                    <label htmlFor="category" className="block text-sm font-medium text-text-secondary">Category</label>
+                    <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1 block w-full bg-background border border-slate-600 rounded-md shadow-sm py-2 px-3 text-text-primary focus:outline-none focus:ring-primary focus:border-primary" required>
+                        <option value="">Select a category</option>
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
+                    <button type="submit" className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors">Add Transaction</button>
+                </div>
+            </form>
         </Modal>
     );
 };

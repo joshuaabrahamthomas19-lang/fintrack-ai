@@ -1,29 +1,51 @@
 import React from 'react';
-import type { View } from '@/types';
-import { DashboardIcon, ReportsIcon, TransactionsIcon } from '@/components/icons';
+import { DashboardIcon, ReportsIcon, PlusCircleIcon, UploadCloudIcon } from '@/components/icons';
+import { useApp } from '@/components/ThemeContext';
 
 interface BottomNavProps {
-    currentView: View;
-    setView: (view: View) => void;
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
 }
 
-const NavItem: React.FC<{ icon: React.ReactNode; label: string; isActive: boolean; onClick: () => void; }> = ({ icon, label, isActive, onClick }) => (
-    <button
-        onClick={onClick}
-        className={`flex flex-col items-center justify-center w-full pt-2 pb-1 transition-colors ${isActive ? 'text-primary' : 'text-text-muted'}`}
-    >
-        {icon}
-        <span className={`text-xs mt-1 font-medium`}>{label}</span>
-    </button>
-);
+const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
+    const { setActiveModal } = useApp();
+    const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
+        { id: 'reports', label: 'Reports', icon: ReportsIcon },
+    ];
 
-const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-slate-700/50 h-16 flex items-center z-20">
-            <NavItem icon={<DashboardIcon />} label="Dashboard" isActive={currentView === 'dashboard'} onClick={() => setView('dashboard')} />
-            <NavItem icon={<TransactionsIcon />} label="Transactions" isActive={currentView === 'transactions'} onClick={() => setView('transactions')} />
-            <NavItem icon={<ReportsIcon />} label="Reports" isActive={currentView === 'reports'} onClick={() => setView('reports')} />
-        </nav>
+        <div className="fixed bottom-0 left-0 z-30 w-full h-16 bg-surface border-t border-background shadow-lg">
+            <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
+                {navItems.map(item => (
+                    <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActiveTab(item.id)}
+                        className={`inline-flex flex-col items-center justify-center px-5 hover:bg-background/50 group ${activeTab === item.id ? 'text-primary' : 'text-text-muted'}`}
+                    >
+                        <item.icon className={`w-6 h-6 mb-1 ${activeTab !== item.id && 'group-hover:text-text-secondary'}`} />
+                        <span className="text-xs">{item.label}</span>
+                    </button>
+                ))}
+                <button
+                    type="button"
+                    onClick={() => setActiveModal('upload')}
+                    className="inline-flex flex-col items-center justify-center px-5 hover:bg-background/50 group text-text-muted"
+                >
+                    <UploadCloudIcon className="w-6 h-6 mb-1 group-hover:text-text-secondary" />
+                    <span className="text-xs">Import</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveModal('addTransaction')}
+                    className="inline-flex flex-col items-center justify-center px-5 hover:bg-background/50 group text-text-muted"
+                >
+                    <PlusCircleIcon className="w-6 h-6 mb-1 group-hover:text-text-secondary" />
+                    <span className="text-xs">Add New</span>
+                </button>
+            </div>
+        </div>
     );
 };
 

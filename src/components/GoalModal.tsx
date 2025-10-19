@@ -1,52 +1,21 @@
-import React, { useState } from 'react';
-import Modal, { ModalButton, ModalInput, ModalLabel } from './Modal';
+import React from 'react';
+import Modal from '@/components/Modal';
 
 interface GoalModalProps {
-    currency: string;
-    onSave: (name: string, targetAmount: number) => void;
     onClose: () => void;
 }
 
-const GoalModal: React.FC<GoalModalProps> = ({ currency, onSave, onClose }) => {
-    const [name, setName] = useState('');
-    const [targetAmount, setTargetAmount] = useState<number | ''>('');
-
-    const handleSave = () => {
-        if (name.trim() && Number(targetAmount) > 0) {
-            onSave(name.trim(), Number(targetAmount));
-            onClose();
-        }
-    };
-
+const GoalModal: React.FC<GoalModalProps> = ({ onClose }) => {
     return (
-        <Modal onClose={onClose} title="Add New Financial Goal">
-            <div className="space-y-4">
-                <div>
-                    <ModalLabel htmlFor="goalName">Goal Name</ModalLabel>
-                    <ModalInput
-                        id="goalName"
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g., New Laptop"
-                    />
+        <Modal onClose={onClose} title="Manage Goal">
+            <form>
+                {/* Form fields for goal management would go here */}
+                <p className="text-text-secondary">Goal management feature coming soon.</p>
+                 <div className="mt-6 flex justify-end space-x-3">
+                    <button type="button" onClick={onClose} className="px-4 py-2 font-semibold text-text-secondary bg-slate-600 rounded-md hover:bg-slate-500 transition-colors">Cancel</button>
+                    <button type="submit" className="px-4 py-2 font-semibold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50" disabled>Save Goal</button>
                 </div>
-                <div>
-                    <ModalLabel htmlFor="targetAmount">Target Amount ({currency})</ModalLabel>
-                    <ModalInput
-                        id="targetAmount"
-                        type="number"
-                        value={targetAmount}
-                        onChange={(e) => setTargetAmount(Number(e.target.value))}
-                        placeholder="e.g., 1500"
-                    />
-                </div>
-            </div>
-            <div className="mt-6">
-                <ModalButton onClick={handleSave} disabled={!name.trim() || !targetAmount || Number(targetAmount) <= 0}>
-                    Save Goal
-                </ModalButton>
-            </div>
+            </form>
         </Modal>
     );
 };
